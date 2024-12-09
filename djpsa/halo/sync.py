@@ -41,12 +41,41 @@ class ResponseKeyMixin:
         return records
 
 
+class CreateMixin:
+
+    def create(self, data, *args, **kwargs):
+        body = self._convert_fields_to_api_format(data)
+        return self.client.create(body)
+
+
+class UpdateMixin:
+
+    def update(self, record_id, data, *args, **kwargs):
+        body = self._convert_fields_to_api_format(data)
+        return self.client.update(record_id, body)
+
+
+class DeleteMixin:
+
+    def delete(self, record_id, *args, **kwargs):
+        return self.client.delete(record_id)
+
+
 class HaloSynchronizer(Synchronizer):
 
     def _format_job_condition(self, last_sync_time):
         return {
             self.last_updated_field: last_sync_time
         }
+
+    def _convert_fields_to_api_format(self, data):
+        """
+        Converts the model field names to the API field names.
+        """
+        api_data = {}
+        for key, value in data.items():
+            api_data[self.model_class.API_FIELDS[key]] = value
+        return api_data
 
 
 class HaloChildFetchRecordsMixin:

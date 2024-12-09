@@ -2,10 +2,10 @@ from typing import Any, List
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo.sync import ResponseKeyMixin
-from djpsa.sync.sync import Synchronizer
+from djpsa.halo import sync
 
 
-class SiteSynchronizer(ResponseKeyMixin, Synchronizer):
+class SiteSynchronizer(ResponseKeyMixin, sync.HaloSynchronizer):
     model_class = models.SiteTracker
     response_key = 'sites'
     client_class = api.SiteAPI

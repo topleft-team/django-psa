@@ -2,10 +2,10 @@ from typing import Any, List
 
 from djpsa.halo import models
 from djpsa.halo.records import api
-from djpsa.sync.sync import Synchronizer
+from djpsa.halo import sync
 
 
-class AgentSynchronizer(Synchronizer):
+class AgentSynchronizer(sync.HaloSynchronizer):
     model_class = models.AgentTracker
     client_class = api.AgentAPI
 

@@ -1,9 +1,9 @@
 from djpsa.halo import models
 from djpsa.halo.records import api
-from djpsa.sync.sync import Synchronizer
+from djpsa.halo import sync
 
 
-class PrioritySynchronizer(Synchronizer):
+class PrioritySynchronizer(sync.HaloSynchronizer):
     model_class = models.PriorityTracker
     lookup_key = 'priorityid'
     client_class = api.PriorityAPI

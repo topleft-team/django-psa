@@ -187,6 +187,18 @@ class Synchronizer:
 
         return results
 
+    def update(self, record_id, data, *args, **kwargs):
+        raise NotImplementedError(
+            f"This synchronizer does not support updates: {self}")
+
+    def create(self, data, *args, **kwargs):
+        raise NotImplementedError(
+            f"This synchronizer does not support creation: {self}")
+
+    def delete(self, record_id, *args, **kwargs):
+        raise NotImplementedError(
+            f"This synchronizer does not support deletion: {self}")
+
     def set_relations(self, instance, json_data):
         """
         Set the foreign key relations on the instance as

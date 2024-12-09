@@ -6,11 +6,16 @@ from dateutil.parser import parse
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo.sync import ResponseKeyMixin, empty_date_parser
-from djpsa.sync.sync import Synchronizer
+from djpsa.halo import sync
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 
 
-class TicketSynchronizer(ResponseKeyMixin, Synchronizer):
+class TicketSynchronizer(ResponseKeyMixin,
+                         sync.CreateMixin,
+                         sync.UpdateMixin,
+                         sync.DeleteMixin,
+                         sync.HaloSynchronizer,
+                         ):
     response_key = 'tickets'
     model_class = models.TicketTracker
     client_class = api.TicketAPI

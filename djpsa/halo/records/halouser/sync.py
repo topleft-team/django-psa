@@ -3,10 +3,10 @@ from typing import Any, List
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo.sync import ResponseKeyMixin
-from djpsa.sync.sync import Synchronizer
+from djpsa.halo import sync
 
 
-class HaloUserSynchronizer(ResponseKeyMixin, Synchronizer):
+class HaloUserSynchronizer(ResponseKeyMixin, sync.HaloSynchronizer):
     model_class = models.HaloUserTracker
     response_key = 'users'
     client_class = api.UserAPI
