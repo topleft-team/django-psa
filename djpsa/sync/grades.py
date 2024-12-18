@@ -2,7 +2,8 @@ class SyncGrades:
     """
     Define grades of synchronizers.
 
-    The result of operational+configuration+slow grades should be all the synchronizers.
+    The result of operational+configuration+slow grades should be all the
+    synchronizers.
     """
     def partial_grades(self):
         """
@@ -23,14 +24,14 @@ class SyncGrades:
     def configuration_grades(self):
         """
         Return a list of synchronizers for resources that change infrequently-
-        such as on a weekly or monthly basis. For example, ticket types, statuses,
-        priorities, etc.
+        such as on a weekly or monthly basis. For example, ticket types,
+        statuses, priorities, etc.
         """
         return []
 
     def slow_grades(self):
         """
-        Return a list of synchronizers for resources that can potentially take a
-        very long time to sync. For example, notes, time entries, etc.
+        Return a list of synchronizers for resources that can potentially take
+        a very long time to sync. For example, notes, time entries, etc.
         """
         return []
