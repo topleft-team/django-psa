@@ -64,14 +64,25 @@ class HaloAPIClient(APIClient):
         return self.request('GET', params={'search_id': record_id})
 
     def create(self, data):
-        # TODO doesnt do anything yet
-        return self.request('POST', body=data)
+        # Halo API expects a list of records, even if we're only creating one
+        return self.request('POST', body=[data])
 
     def update(self, record_id, data):
-        # TODO doesnt do anything yet
-        return self.request('PUT', params={'id': record_id}, body=data)
+        data['id'] = record_id
+        return self.request('POST', body=[data])
 
-    def _format_endpoint(self):
+    def delete(self, record_id):
+        return self.request(
+            'DELETE',
+            endpoint_url=self._format_endpoint(record_id)
+        )
+
+    def _format_endpoint(self, record_id=None):
+
+        if record_id:
+            return '{}{}/{}'.format(
+                self.resource_server, self.endpoint, record_id)
+
         return '{}{}'.format(self.resource_server, self.endpoint)
 
     def _format_params(self, params=None):

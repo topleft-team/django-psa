@@ -73,6 +73,51 @@ class Ticket(models.Model):
 
     use = models.CharField(max_length=255, blank=True, null=True)
 
+    API_FIELDS = {
+        "id": "id",
+        "summary": "summary",
+        "details": "details",
+        "last_action_date": "lastactiondate",
+        "last_update": "last_update",
+        "user_email": "useremail",
+        "reported_by": "reportedby",
+        "end_user_status": "enduserstatus",
+        "category_1": "category1",
+        "category_2": "category2",
+        "category_3": "category3",
+        "category_4": "category4",
+        "inactive": "inactive",
+        "impact": "impact",
+        "flagged": "flagged",
+        "on_hold": "onhold",
+        "cost": "cost",
+        "estimate": "estimate",
+        "estimated_days": "estimateddays",
+        "exclude_from_sla": "excludefromslas",
+        "team": "team",
+        "read": "read",
+        "use": "use",
+        "email_to_list": "emailtolist",
+        "urgency": "urgency",
+        "service_status_note": "servicestatusnote",
+        "ticket_tags": "tickettags",
+        "appointment_type": "appointment_type",
+        "impact_level": "impactlevel",
+        "fix_by_date": "fixbydate",
+        "start_date": "startdate",
+        "target_date": "targetdate",
+        "last_incoming_email": "lastincomingemail",
+        "client": "client_id",
+        "status": "status_id",
+        "priority": "priority_id",
+        "agent": "agent_id",
+        "sla": "sla_id",
+        "user": "user_id",
+        "site": "site_id",
+        "type": "tickettype_id",
+        "parent": "parent_id",
+    }
+
     class Meta:
         verbose_name_plural = "Tickets"
 

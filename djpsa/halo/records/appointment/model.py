@@ -27,6 +27,24 @@ class Appointment(models.Model):
     client = models.ForeignKey(
         'Client', on_delete=models.CASCADE, blank=True, null=True)
 
+    API_FIELDS = {
+        'id': 'id',
+        'subject': 'subject',
+        'start_date': 'start_date',
+        'end_date': 'end_date',
+        'appointment_type': 'appointment_type_name',
+        'is_private': 'is_private',
+        'is_task': 'is_task',
+        'complete_status': 'complete_status',
+        'colour': 'colour',
+        'online_meeting_url': 'online_meeting_url',
+        'ticket': 'ticket_id',
+        'site': 'site_id',
+        'agent': 'agent_id',
+        'user': 'user_id',
+        'client': 'client_id',
+    }
+
     class Meta:
         verbose_name_plural = "Appointments"
 

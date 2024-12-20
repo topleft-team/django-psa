@@ -1,9 +1,10 @@
 from djpsa.halo import models
 from djpsa.halo.records import api
-from djpsa.halo.sync import HaloSynchronizer
+from djpsa.halo import sync
 
 
-class SLASynchronizer(HaloSynchronizer):
+class SLASynchronizer(sync.HaloSynchronizer):
+
     model_class = models.SLATracker
     client_class = api.StatusAPI
 

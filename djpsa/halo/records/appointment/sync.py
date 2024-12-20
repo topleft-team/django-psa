@@ -4,10 +4,14 @@ from dateutil.parser import parse
 
 from djpsa.halo import models
 from djpsa.halo.records import api
-from djpsa.halo.sync import HaloSynchronizer, ResponseKeyMixin
+from djpsa.halo import sync
 
 
-class AppointmentSynchronizer(ResponseKeyMixin, HaloSynchronizer):
+class AppointmentSynchronizer(sync.CreateMixin,
+                              sync.UpdateMixin,
+                              sync.DeleteMixin,
+                              sync.ResponseKeyMixin,
+                              sync.HaloSynchronizer):
     response_key = 'appointments'
     model_class = models.AppointmentTracker
     client_class = api.AppointmentAPI

@@ -1,10 +1,10 @@
 from djpsa.halo import models
 from djpsa.halo.records import api
 
-from djpsa.halo.sync import HaloSynchronizer
+from djpsa.halo import sync
 
 
-class TeamSynchronizer(HaloSynchronizer):
+class TeamSynchronizer(sync.HaloSynchronizer):
     model_class = models.TeamTracker
     client_class = api.TeamAPI
 

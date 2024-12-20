@@ -1,9 +1,9 @@
 from djpsa.halo import models
 from djpsa.halo.records import api
-from djpsa.halo.sync import HaloSynchronizer
+from djpsa.halo import sync
 
 
-class TicketTypeSynchronizer(HaloSynchronizer):
+class TicketTypeSynchronizer(sync.HaloSynchronizer):
     model_class = models.TicketTypeTracker
     client_class = api.TicketTypeAPI
 

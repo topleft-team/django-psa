@@ -1,12 +1,14 @@
 from djpsa.halo import models
 from djpsa.halo.records import api
-from djpsa.halo.sync import \
-    ResponseKeyMixin, HaloChildFetchRecordsMixin, empty_date_parser
-from djpsa.halo.sync import HaloSynchronizer
+from djpsa.halo import sync
 
 
-class ActionSynchronizer(
-        ResponseKeyMixin, HaloChildFetchRecordsMixin, HaloSynchronizer):
+class ActionSynchronizer(sync.ResponseKeyMixin,
+                         sync.HaloChildFetchRecordsMixin,
+                         sync.CreateMixin,
+                         sync.UpdateMixin,
+                         sync.HaloSynchronizer,
+                         ):
     lookup_key = 'ticket_action_id'
     model_class = models.ActionTracker
     client_class = api.ActionAPI
@@ -37,11 +39,11 @@ class ActionSynchronizer(
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get(self.lookup_key)
         instance.action_arrival_date = \
-            empty_date_parser(json_data.get('actionarrivaldate'))
+            sync.empty_date_parser(json_data.get('actionarrivaldate'))
         instance.action_completion_date = \
-            empty_date_parser(json_data.get('actioncompletiondate'))
+            sync.empty_date_parser(json_data.get('actioncompletiondate'))
         instance.action_date_created = \
-            empty_date_parser(json_data.get('actiondatecreated'))
+            sync.empty_date_parser(json_data.get('actiondatecreated'))
         instance.time_taken = json_data.get('timetaken')
         instance.time_taken_adjusted = json_data.get('timetakenadjusted')
         instance.time_taken_days = json_data.get('timetakendays')
