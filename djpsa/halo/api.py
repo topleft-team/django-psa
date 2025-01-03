@@ -65,11 +65,15 @@ class HaloAPIClient(APIClient):
 
     def create(self, data):
         # Halo API expects a list of records, even if we're only creating one
-        return self.request('POST', body=[data])
+        if not isinstance(data, list):
+            data = [data]
+
+        return self.request('POST', body=data)
 
     def update(self, record_id, data):
-        data['id'] = record_id
-        return self.request('POST', body=[data])
+        if not isinstance(data, list):
+            data = [data]
+        return self.request('POST', body=data)
 
     def delete(self, record_id):
         return self.request(
@@ -95,7 +99,8 @@ class HaloAPIClient(APIClient):
         request_params.update(params)
 
         if 'page_no' in request_params:
-            request_params['page_size'] = params.get('page_size', 100)
+            request_params['page_size'] = \
+                params.get('page_size', self.request_settings['batch_size'])
             request_params['pageinate'] = True
 
         return request_params
@@ -135,6 +140,18 @@ class HaloAPIClient(APIClient):
             )
 
         return response
+
+
+class WebhookAPIClient(HaloAPIClient):
+    endpoint = 'webhook'
+
+    def get(self, **kwargs):
+        return self.request('GET')
+
+
+class NotificationAPIClient(HaloAPIClient):
+    # API for webhook event creation, tickets, clients, etc
+    endpoint = 'notification'
 
 
 class HaloAPITokenFetcher:

@@ -58,7 +58,8 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
 
         # Halo API has different keys for last update depending on if it's
         # a GET or POST request. This API is going to be the death of me.
-        last_update = json_data.get('lastupdate') or json_data.get('last_update')
+        last_update = \
+            json_data.get('lastupdate') or json_data.get('last_update')
 
         if last_update:
             try:
@@ -68,7 +69,8 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                 instance.last_update = parse(last_update)
 
         instance.user_email = json_data.get('useremail', instance.user_email)
-        instance.reported_by = json_data.get('reportedby', instance.reported_by)
+        instance.reported_by = \
+            json_data.get('reportedby', instance.reported_by)
         instance.end_user_status = json_data.get('enduserstatus')
         instance.category_1 = \
             json_data.get('category1') or json_data.get('category_1')
@@ -97,10 +99,12 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         instance.reviewed = json_data.get('reviewed', False)
         instance.read = json_data.get('read', False)
         instance.use = json_data.get('use', instance.use)
-        instance.email_to_list = json_data.get('emailtolist', instance.email_to_list)
+        instance.email_to_list = \
+            json_data.get('emailtolist', instance.email_to_list)
         instance.urgency = json_data.get('urgency', instance.urgency)
         instance.service_status_note = json_data.get('servicestatusnote')
-        instance.ticket_tags = json_data.get('tickettags', instance.ticket_tags)
+        instance.ticket_tags = \
+            json_data.get('tickettags', instance.ticket_tags)
         instance.appointment_type = json_data.get('appointment_type')
         instance.impact_level = json_data.get('impactlevel')
 
@@ -150,7 +154,6 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                 second=parse(json_data.get('targettime')).second
             ) if instance.target_date else None  # Don't set time if target
             # date is an impossible date.
-
 
         last_incoming_email_date = json_data.get('lastincomingemaildate')
         if last_incoming_email_date:

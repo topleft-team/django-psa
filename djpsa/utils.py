@@ -51,3 +51,25 @@ def redis_lock(lock_name, timeout, blocking_timeout):
             lock.release()
         except redis.exceptions.LockNotOwnedError:
             pass
+
+
+class DjPSASettings:
+    # TODP never actually needed to be a class for CW and AT, so maybe
+    # just make a function?
+
+    @staticmethod
+    def get_settings():
+        # Make some defaults
+        request_settings = {
+            'timeout': 30.0,
+            'batch_size': 100,
+            'max_attempts': 3,
+            'callback_host': None,
+            'callback_url': None,
+            'callback_description': 'Third party',
+        }
+
+        if hasattr(settings, 'DJPSA_CONF_CALLABLE'):
+            request_settings.update(settings.DJPSA_CONF_CALLABLE())
+
+        return request_settings

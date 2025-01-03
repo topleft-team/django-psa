@@ -6,6 +6,7 @@ from django.db import transaction, IntegrityError
 from django.conf import settings
 
 from djpsa.sync.models import SyncJob
+from djpsa.utils import DjPSASettings
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +86,10 @@ class Synchronizer:
                  *args: Any,
                  **kwargs: Any):
 
-        self.sync_settings = {
-            'batch_size': 100,
-        }
-        if hasattr(settings, 'DJPSA_CONFIG'):
-            self.request_settings.update(
-                settings.DJPSA_CONFIG().get('sync', {}))
+        self.sync_settings = DjPSASettings.get_settings()
+        if hasattr(settings, 'DJPSA_CONF_CALLABLE'):
+            self.sync_settings.update(
+                settings.DJPSA_CONF_CALLABLE().get('sync', {}))
 
         conditions = conditions or []
         self.client = self.client_class(conditions)

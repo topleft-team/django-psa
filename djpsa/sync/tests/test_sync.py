@@ -126,8 +126,9 @@ class TestSynchronizer(TestCase):
             # Unpacked records from second page
             # No records in the last page
             mock_unpack_records.side_effect = [
-                ['record1', 'record2'],
-                ['record3', ],
+                [{'id': 1, 'summary': 'record1'},
+                 {'id': 2, 'summary': 'record2'}],
+                [{'id': 3, 'summary': 'record3'}, ],
                 []
             ]
 

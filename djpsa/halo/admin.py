@@ -5,7 +5,15 @@ from djpsa.halo import models
 
 @admin.register(models.Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('id', 'summary', 'client', 'status', 'priority', 'agent', 'type')
+    list_display = (
+        'id',
+        'summary',
+        'client',
+        'status',
+        'priority',
+        'agent',
+        'type'
+    )
     search_fields = [
         'id',
         'summary',
