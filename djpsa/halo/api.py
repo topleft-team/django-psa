@@ -224,3 +224,33 @@ class HaloAPITokenFetcher:
 
         cache.set(self._get_cache_name(), token, CACHE_EXPIRE_TIME)
         return token
+
+    def _log_failed(self, response):
+        result = response.json()
+        logger.error(f'Failed request: HTTP {response.status_code} '
+                     f'for {response.url}; response {result}')
+
+    def _prepare_error_response(self, response):
+        result = response.json()
+
+        error = ""
+
+        try:
+            error = result['error']
+            error_desc = error['error_description']
+        except KeyError:
+
+            if len(result) == 1:
+                # This is about the best we can do. The Halo API
+                # doesn't provide a standard error format. There's
+                # no telling how deep the rabbit hole goes. We will
+                # just have to handle new error types as they come.
+                error_desc = list(result.values())[0] \
+                    .replace("\r", "").replace("\n", "").replace("\'", "")
+            else:
+
+                error_desc = "An unknown error has occurred."
+
+        error_msg = f"{error}: {error_desc}" if error else error_desc
+
+        return f'Error: {error_msg}'

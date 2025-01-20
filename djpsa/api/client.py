@@ -146,13 +146,10 @@ class APIClient:
             raise exc.APIError(response)
 
     def _log_failed(self, response):
-        # TODO will need to be redefined in PSA subclasses
-        logger.error(f'Failed request: HTTP {response.status_code} '
-                     f'for {response.url}; response {response.content}')
+        raise NotImplementedError('Subclasses must implement this method.')
 
     def _prepare_error_response(self, response):
-        # TODO will need to be redefined in PSA subclasses
-        return f'Error: {response.status_code}: {response.content}'
+        raise NotImplementedError('Subclasses must implement this method.')
 
     def _get_request_kwargs(self):
         raise NotImplementedError('Subclasses must implement this method.')
@@ -174,8 +171,8 @@ class APIClient:
     def _format_params(self, params=None):
         raise NotImplementedError('Subclasses must implement this method.')
 
-    def _get_headers(self):
-        return {}
-
     def get_page(self, page=None, batch_size=None, params=None):
         raise NotImplementedError('Subclasses must implement this method.')
+
+    def _get_headers(self):
+        return {}
