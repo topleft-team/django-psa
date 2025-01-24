@@ -21,13 +21,13 @@ class ItilRequestType(Enum):
 class TicketOnlyManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().exclude(
-            itil_requesttype=ItilRequestType.PROJECTS.value)
+            itil_request_type=ItilRequestType.PROJECTS.value)
 
 
 class ProjectOnlyManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(
-            itil_requesttype=ItilRequestType.PROJECTS.value)
+            itil_request_type=ItilRequestType.PROJECTS.value)
 
     def projects_only(self):
         return self.filter(itil_request_type=ItilRequestType.PROJECTS.value)
