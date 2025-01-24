@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class BudgetDataSynchronizer(sync.HaloSynchronizer):
     model_class = models.BudgetDataTracker
-    client_class = api.TicketAPI
+    client_class = api.BudgetDataAPI
 
     related_meta = {
         'ticket_id': (models.Ticket, 'ticket'),
@@ -25,9 +25,7 @@ class BudgetDataSynchronizer(sync.HaloSynchronizer):
                 'Fetching {} records, batch {}'.format(
                     self.get_model_name(), batch)
             )
-            response = self.client.fetch_resource(
-                endpoint_url=self.client._format_endpoint(record_id=ticket)
-            )
+            response = self.client.get(ticket)
             records = self._unpack_records(response)
             self.persist_page(records, results)
             batch += 1

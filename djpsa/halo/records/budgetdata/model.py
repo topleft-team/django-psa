@@ -8,7 +8,7 @@ from model_utils import FieldTracker
 
 class BudgetData(models.Model):
     ticket = models.ForeignKey(
-        'Ticket', on_delete=models.CASCADE, blank=True, null=True)
+        'Ticket', on_delete=models.CASCADE)
     budget_type = models.ForeignKey(
         'BudgetType', on_delete=models.CASCADE, blank=True, null=True)
     hours = models.DecimalField(

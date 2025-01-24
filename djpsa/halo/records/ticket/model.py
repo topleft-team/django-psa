@@ -20,21 +20,18 @@ class ItilRequestType(Enum):
 
 class TicketOnlyManager(models.Manager):
     def get_queryset(self):
-        return self.get_queryset().filter(itil_requesttype__in=[
-            ItilRequestType.INCIDENT.value,
-            ItilRequestType.CHANGE_REQUEST.value,
-            ItilRequestType.SERVICE_REQUEST.value,
-            ItilRequestType.PROBLEM.value,
-            ItilRequestType.REQUEST_FOR_QUOTE.value,
-            ItilRequestType.ADVICE_OTHER.value,
-            ItilRequestType.TASKS.value,
-        ])
+        return super().get_queryset().exclude(
+            itil_requesttype=ItilRequestType.PROJECTS.value)
 
 
 class ProjectOnlyManager(models.Manager):
     def get_queryset(self):
-        return self.get_queryset().filter(
+        return super().get_queryset().filter(
             itil_requesttype=ItilRequestType.PROJECTS.value)
+
+    def projects_only(self):
+        return self.filter(itil_request_type=ItilRequestType.PROJECTS.value)
+
 
 
 class Ticket(models.Model):
@@ -160,11 +157,24 @@ class Ticket(models.Model):
         "parent": "parent_id",
     }
 
+    objects = models.Manager()
+    tickets_only = TicketOnlyManager()
+    projects_only = ProjectOnlyManager()
+
     class Meta:
         verbose_name_plural = "Tickets"
 
     def __str__(self):
         return f"Ticket {self.id} - {self.summary}"
+
+    @property
+    def budget_hours(self):
+        budget_hours = 0
+
+        for budget in self.budgetdata_set.all():
+            budget_hours += budget.hours
+
+        return budget_hours
 
 
 class TicketTracker(Ticket):
