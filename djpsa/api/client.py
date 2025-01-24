@@ -126,27 +126,29 @@ class APIClient:
         elif response.status_code == 403:
             # TODO permissions exception from AT returns as 500, because
             #  it is terribly designed. Need to handle
-            self._log_failed(response)
+            error_message = self._prepare_error_response(response)
+            self._log_failed(response, error_message)
             raise exc.SecurityPermissionsException(
-                self._prepare_error_response(response), response.status_code)
+                error_message, response.status_code)
         elif response.status_code == 404:
             msg = 'Resource not found: {}'.format(response.url)
             logger.warning(msg)
             raise exc.RecordNotFoundError(msg)
         elif 400 <= response.status_code < 499:
-            self._log_failed(response)
-            raise exc.APIClientError(
-                self._prepare_error_response(response))
+            error_message = self._prepare_error_response(response)
+            self._log_failed(response, error_message)
+            raise exc.APIClientError(error_message)
         elif response.status_code == 500:
-            self._log_failed(response)
-            raise exc.APIServerError(
-                self._prepare_error_response(response))
+            error_message = self._prepare_error_response(response)
+            self._log_failed(response, error_message)
+            raise exc.APIServerError(error_message)
         else:
-            self._log_failed(response)
+            self._log_failed(response, response.content)
             raise exc.APIError(response)
 
-    def _log_failed(self, response):
-        raise NotImplementedError('Subclasses must implement this method.')
+    def _log_failed(self, response, message):
+        logger.error(f'Failed request: HTTP {response.status_code} '
+                     f'for {response.url}; response {message}')
 
     def _prepare_error_response(self, response):
         raise NotImplementedError('Subclasses must implement this method.')

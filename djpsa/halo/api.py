@@ -225,11 +225,6 @@ class HaloAPITokenFetcher:
         cache.set(self._get_cache_name(), token, CACHE_EXPIRE_TIME)
         return token
 
-    def _log_failed(self, response):
-        result = response.json()
-        logger.error(f'Failed request: HTTP {response.status_code} '
-                     f'for {response.url}; response {result}')
-
     def _prepare_error_response(self, response):
         result = response.json()
 
