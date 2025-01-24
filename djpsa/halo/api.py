@@ -72,6 +72,7 @@ class HaloAPIClient(APIClient):
         return self.request('POST', body=data)
 
     def update(self, record_id, data):
+        data.update({'id': record_id})
         if not isinstance(data, list):
             data = [data]
         return self.request('POST', body=data)
