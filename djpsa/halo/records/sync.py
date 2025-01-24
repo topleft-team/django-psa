@@ -15,6 +15,8 @@ from djpsa.halo.records.halouser.sync import HaloUserSynchronizer
 from djpsa.halo.records.tickettype.sync import TicketTypeSynchronizer
 from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.team.sync import TeamSynchronizer
+from djpsa.halo.records.budgettype.sync import BudgetTypeSynchronizer
+from djpsa.halo.records.budgetdata.sync import BudgetDataSynchronizer
 
 from djpsa.sync.grades import SyncGrades
 
@@ -48,6 +50,8 @@ class HaloSyncGrades(SyncGrades):
             PrioritySynchronizer,
             TicketTypeSynchronizer,
             TeamSynchronizer,
+            BudgetTypeSynchronizer,
+            BudgetDataSynchronizer,
         ]
 
 
@@ -64,4 +68,6 @@ sync_command_list = [
         ('appointment', (AppointmentSynchronizer, _('Appointment'))),
         ('action', (ActionSynchronizer, _('Action'))),
         ('team', (TeamSynchronizer, _('Team'))),
+        ('budget_type', (BudgetTypeSynchronizer, _('BudgetType'))),
+        ('budget_data', (BudgetDataSynchronizer, _('BudgetData'))),
     ]

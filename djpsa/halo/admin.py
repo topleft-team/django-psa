@@ -96,3 +96,15 @@ class ActionAdmin(admin.ModelAdmin):
 class TeamAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'ticket_count')
     search_fields = ['id', 'name']
+
+
+@admin.register(models.BudgetType)
+class BudgetTypeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')
+    search_fields = ['id', 'name']
+
+
+@admin.register(models.BudgetData)
+class BudgetDataAdmin(admin.ModelAdmin):
+    list_display = ('id', 'budget_type', 'ticket')
+    search_fields = ['id', 'budget_type__name', 'ticket__id']

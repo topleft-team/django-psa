@@ -1,5 +1,37 @@
+from enum import Enum
+
 from django.db import models
 from model_utils import FieldTracker
+
+
+class ItilRequestType(Enum):
+    # System defined ITIL request types. We can use these to identify
+    # the type of ticket we are dealing with. This is useful for
+    # when an instance has custom ticket types beyond the default.
+    INCIDENT = 1
+    CHANGE_REQUEST = 2
+    SERVICE_REQUEST = 3
+    PROBLEM = 4
+    REQUEST_FOR_QUOTE = 20
+    ADVICE_OTHER = 21
+    PROJECTS = 22
+    TASKS = 23
+
+
+class TicketOnlyManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().exclude(
+            itil_requesttype=ItilRequestType.PROJECTS.value)
+
+
+class ProjectOnlyManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            itil_requesttype=ItilRequestType.PROJECTS.value)
+
+    def projects_only(self):
+        return self.filter(itil_request_type=ItilRequestType.PROJECTS.value)
+
 
 
 class Ticket(models.Model):
@@ -70,6 +102,13 @@ class Ticket(models.Model):
         models.TextField(blank=True, null=True)
     ticket_tags = models.TextField(blank=True, null=True)
     appointment_type = models.CharField(max_length=255, blank=True, null=True)
+    itil_request_type = models.IntegerField(
+        choices=[(
+            e.value,
+            e.name.replace('_', ' ').title()
+        ) for e in ItilRequestType],
+        default=ItilRequestType.INCIDENT.value,
+    )
 
     use = models.CharField(max_length=255, blank=True, null=True)
 
@@ -118,11 +157,24 @@ class Ticket(models.Model):
         "parent": "parent_id",
     }
 
+    objects = models.Manager()
+    tickets_only = TicketOnlyManager()
+    projects_only = ProjectOnlyManager()
+
     class Meta:
         verbose_name_plural = "Tickets"
 
     def __str__(self):
         return f"Ticket {self.id} - {self.summary}"
+
+    @property
+    def budget_hours(self):
+        budget_hours = 0
+
+        for budget in self.budgetdata_set.all():
+            budget_hours += budget.hours
+
+        return budget_hours
 
 
 class TicketTracker(Ticket):
