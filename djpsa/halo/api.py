@@ -145,14 +145,16 @@ class HaloAPIClient(APIClient):
 
     def _prepare_error_response(self, response):
         result = response.json()
-
         error = ""
+
+        if type(result) == str:
+            # Error responses can be a string.
+            return result
 
         try:
             error = result['error']
             error_desc = error['error_description']
         except KeyError:
-
             if len(result) == 1:
                 # This is about the best we can do. The Halo API
                 # doesn't provide a standard error format. There's
@@ -161,12 +163,10 @@ class HaloAPIClient(APIClient):
                 error_desc = list(result.values())[0] \
                     .replace("\r", "").replace("\n", "").replace("\'", "")
             else:
-
+                logger.error(f"Unknown error format: {result}")
                 error_desc = "An unknown error has occurred."
 
-        error_msg = f"{error}: {error_desc}" if error else error_desc
-
-        return f'Error: {error_msg}'
+        return f"{error}: {error_desc}" if error else error_desc
 
 
 class WebhookAPIClient(HaloAPIClient):
