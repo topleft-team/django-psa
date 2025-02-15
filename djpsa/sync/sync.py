@@ -73,6 +73,49 @@ class SyncResults:
         self.synced_ids = set()
 
 
+class SyncRelatedMixin:
+    """
+    Mixin for synchronizers that need to sync related objects.
+    """
+
+    def sync_related(self, instance, sync_classes=None):
+        """
+        Sync related objects for the given instance.
+        """
+        sync_classes = sync_classes + self.get_related_synchronizers(instance) \
+            if sync_classes else self.get_related_synchronizers(instance)
+
+
+        for sync_class in sync_classes:
+            self._relation_sync(*sync_class)
+
+    def get_related_synchronizers(self, instance):
+        """
+        Return a list of related synchronizers.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def _relation_sync(synchronizer, filter_params):
+        """
+        Perform the sync specifically for records related to the given instance.
+        """
+
+        results = SyncResults()
+
+        # Set of IDs of all records related to the parent object
+        # to sync, to delete only related stale records.
+        initial_ids = synchronizer.instance_ids(filter_params=filter_params)
+        results = synchronizer.fetch_records(results, )
+
+        results.deleted_count = synchronizer.prune_stale_records(
+            initial_ids, results.synced_ids
+        )
+
+        return results.created_count, results.updated_count, \
+            results.skipped_count, results.deleted_count
+
+
 class Synchronizer:
     lookup_key = 'id'
     model_class = None
@@ -125,7 +168,7 @@ class Synchronizer:
 
         # Set of IDs of all records prior to sync,
         # to find stale records for deletion.
-        initial_ids = self._instance_ids() if self.full else []
+        initial_ids = self.instance_ids() if self.full else []
 
         results = self.fetch_records(results)
 
@@ -137,9 +180,11 @@ class Synchronizer:
         return results.created_count, results.updated_count, \
             results.skipped_count, results.deleted_count
 
-    def _instance_ids(self):
+    def instance_ids(self, filter_params=None):
         ids = self.model_class.objects.all().order_by('id') \
             .values_list('id', flat=True)
+        if filter_params:
+            ids = ids.filter(**filter_params)
         return set(ids)
 
     def fetch_records(self, results, params=None):

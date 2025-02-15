@@ -97,6 +97,10 @@ class HaloChildFetchRecordsMixin:
     parent_model_class = None
     parent_field = None
 
+    def __init__(self, parent_object_id=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.parent_object_id = parent_object_id
+
     def fetch_records(self, results, params=None):
         params = params or {}
 
@@ -118,6 +122,9 @@ class HaloChildFetchRecordsMixin:
     def parent_object_ids(self):
         object_ids = self.parent_model_class.objects.all() \
             .values_list('id', flat=True)
+
+        if self.parent_object_id:
+            object_ids = [self.parent_object_id]
 
         return object_ids
 
