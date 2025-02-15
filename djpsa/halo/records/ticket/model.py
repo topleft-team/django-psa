@@ -33,7 +33,6 @@ class ProjectOnlyManager(models.Manager):
         return self.filter(itil_request_type=ItilRequestType.PROJECTS.value)
 
 
-
 class Ticket(models.Model):
     summary = models.CharField(blank=True, null=True, max_length=255)
     details = models.TextField(

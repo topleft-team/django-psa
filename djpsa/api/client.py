@@ -151,7 +151,7 @@ class APIClient:
                      f'for {response.url}; response {message}')
 
     def _prepare_error_response(self, response):
-        raise NotImplementedError('Subclasses must implement this method.')
+        return response.json().content
 
     def _get_request_kwargs(self):
         raise NotImplementedError('Subclasses must implement this method.')
