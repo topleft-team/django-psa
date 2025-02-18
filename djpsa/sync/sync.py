@@ -4,6 +4,7 @@ from typing import List, Any
 from django.utils import timezone
 from django.db import transaction, IntegrityError
 from django.conf import settings
+from abc import ABC, abstractmethod
 
 from djpsa.sync.models import SyncJob
 from djpsa.utils import get_djpsa_settings
@@ -73,32 +74,32 @@ class SyncResults:
         self.synced_ids = set()
 
 
-class SyncRelatedMixin:
+class AbstractSyncRelated(ABC):
     """
-    Mixin for synchronizers that need to sync related objects.
+    Abstract class for synchronizers that sync related objects.
     """
 
-    def sync_related(self, instance, sync_classes=None):
+    def sync_related(self, instance):
         """
         Sync related objects for the given instance.
         """
-        sync_classes = sync_classes + self.get_related_synchronizers(instance) \
-            if sync_classes else self.get_related_synchronizers(instance)
-
+        sync_classes = self.get_related_synchronizers(instance)
 
         for sync_class in sync_classes:
             self._relation_sync(*sync_class)
 
+    @abstractmethod
     def get_related_synchronizers(self, instance):
         """
         Return a list of related synchronizers.
         """
-        raise NotImplementedError
+        pass
 
     @staticmethod
     def _relation_sync(synchronizer, filter_params):
         """
-        Perform the sync specifically for records related to the given instance.
+        Perform the sync specifically for records related to the given
+        instance.
         """
 
         results = SyncResults()

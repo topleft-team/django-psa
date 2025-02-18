@@ -198,7 +198,8 @@ class HaloAPITokenFetcher:
         secret_hash = hashlib.sha256(
             self.credentials.client_secret.encode('utf-8')
         ).hexdigest()
-        return HALO_TOKEN_CACHE_NAME.format(self.credentials.client_id, secret_hash)
+        return HALO_TOKEN_CACHE_NAME.format(
+            self.credentials.client_id, secret_hash)
 
     def _get_saved_token(self):
         return cache.get(self._get_cache_name())

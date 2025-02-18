@@ -6,7 +6,7 @@ from dateutil.parser import parse
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo import sync
-from djpsa.sync.sync import SyncRelatedMixin
+from djpsa.sync.sync import AbstractSyncRelated
 from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
@@ -17,7 +17,7 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                          sync.CreateMixin,
                          sync.UpdateMixin,
                          sync.DeleteMixin,
-                         SyncRelatedMixin,
+                         AbstractSyncRelated,
                          sync.HaloSynchronizer,
                          ):
     response_key = 'tickets'
@@ -181,15 +181,19 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         """
         sync_classes = []
 
-        appointment_sync = AppointmentSynchronizer(full=True,
-                                                   conditions=[{
-                                                       'ticket_id': instance.id
-                                                   }])
+        appointment_sync = AppointmentSynchronizer(
+            full=True,
+            conditions=[{
+                'ticket_id': instance.id
+            }]
+        )
 
         sync_classes.append((appointment_sync, {'ticket': instance.id}))
 
         action_sync = ActionSynchronizer(
-            full=True, parent_object_id=instance.id, conditions=[{
+            full=True,
+            parent_object_id=instance.id,
+            conditions=[{
                 'ticket_id': instance.id
             }])
 
