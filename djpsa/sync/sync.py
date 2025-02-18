@@ -439,13 +439,14 @@ class Synchronizer:
         """
         For some record types, filtering out records that don't meet
         certain criteria via the API may not be possible. In these cases,
-        override this method to perform a check in child synchronizers to remove
-        records that don't meet the child class' criteria.
+        override this method to perform a check in child synchronizers to
+        remove records that don't meet the child class' criteria.
 
         This method should return True if the record is valid, and False if it
         should be skipped. The reason we want to skip this record is that we
-        don't want this record to be counted as a skipped record, or included in
-        the results in any way. As if it was never requested in the first place.
+        don't want this record to be counted as a skipped record, or included
+        in the results in any way. As if it was never requested in the first
+        place.
 
         By default, this method returns True, so that all records are included.
         """
