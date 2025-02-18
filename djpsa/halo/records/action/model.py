@@ -14,6 +14,8 @@ class Action(models.Model):
     time_taken = models.FloatField(blank=True, null=True)
     time_taken_adjusted = models.FloatField(blank=True, null=True)
     time_taken_days = models.FloatField(blank=True, null=True)
+    non_billable_time = models.FloatField(blank=True, null=True)
+    travel_time = models.FloatField(blank=True, null=True)
     note = models.TextField(blank=True, null=True)
     action_charge_amount = models.FloatField(blank=True, null=True)
     action_charge_hours = models.FloatField(blank=True, null=True)
@@ -24,6 +26,7 @@ class Action(models.Model):
     charge_rate = models.IntegerField(blank=True, null=True)
     hidden_from_user = models.BooleanField(default=False)
     important = models.BooleanField(default=False)
+    outcome = models.CharField(max_length=255, blank=True, null=True)
 
     ticket = models.ForeignKey(
         'Ticket',
@@ -55,6 +58,8 @@ class Action(models.Model):
         'time_taken': 'timetaken',
         'time_taken_adjusted': 'timetakenadjusted',
         'time_taken_days': 'timetakendays',
+        'non_billable_time': 'nonbilltime',
+        'travel_time': 'traveltime',
         'note': 'note',
         'action_charge_amount': 'actionchargeamount',
         'action_charge_hours': 'actionchargehours',
@@ -68,6 +73,7 @@ class Action(models.Model):
         'ticket': 'ticket_id',
         'project': 'project_id',
         'agent': 'who_agentid',
+        'outcome': 'outcome',
     }
 
 

@@ -143,6 +143,31 @@ class HaloAPIClient(APIClient):
 
         return response
 
+    def _prepare_error_response(self, response):
+        result = response.json()
+        error = ""
+
+        if type(result) == str:
+            # Error responses can be a string.
+            return result
+
+        try:
+            error = result['error']
+            error_desc = error['error_description']
+        except KeyError:
+            if len(result) == 1:
+                # This is about the best we can do. The Halo API
+                # doesn't provide a standard error format. There's
+                # no telling how deep the rabbit hole goes. We will
+                # just have to handle new error types as they come.
+                error_desc = list(result.values())[0] \
+                    .replace("\r", "").replace("\n", "").replace("\'", "")
+            else:
+                logger.error(f"Unknown error format: {result}")
+                error_desc = "An unknown error has occurred."
+
+        return f"{error}: {error_desc}" if error else error_desc
+
 
 class WebhookAPIClient(HaloAPIClient):
     endpoint = 'webhook'
@@ -226,28 +251,3 @@ class HaloAPITokenFetcher:
 
         cache.set(self._get_cache_name(), token, CACHE_EXPIRE_TIME)
         return token
-
-    def _prepare_error_response(self, response):
-        result = response.json()
-
-        error = ""
-
-        try:
-            error = result['error']
-            error_desc = error['error_description']
-        except KeyError:
-
-            if len(result) == 1:
-                # This is about the best we can do. The Halo API
-                # doesn't provide a standard error format. There's
-                # no telling how deep the rabbit hole goes. We will
-                # just have to handle new error types as they come.
-                error_desc = list(result.values())[0] \
-                    .replace("\r", "").replace("\n", "").replace("\'", "")
-            else:
-
-                error_desc = "An unknown error has occurred."
-
-        error_msg = f"{error}: {error_desc}" if error else error_desc
-
-        return f'Error: {error_msg}'

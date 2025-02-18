@@ -225,6 +225,12 @@ class Synchronizer:
     def persist_page(self, records, results):
         """Persist one page of records to DB."""
         for record in records:
+            if not self._try_validate(record):
+                # Skip this record, if it doesn't meet some criteria
+                # defined in a child synchronizer. Do not count it
+                # as a skipped record.
+                continue
+
             try:
                 with transaction.atomic():
                     instance, result = self.update_or_create_instance(record)
@@ -428,3 +434,20 @@ class Synchronizer:
 
     def _is_instance_changed(self, instance):
         return instance.tracker.changed()
+
+    def _try_validate(self, record):
+        """
+        For some record types, filtering out records that don't meet
+        certain criteria via the API may not be possible. In these cases,
+        override this method to perform a check in child synchronizers to remove
+        records that don't meet the child class' criteria.
+
+        This method should return True if the record is valid, and False if it
+        should be skipped. The reason we want to skip this record is that we
+        don't want this record to be counted as a skipped record, or included in
+        the results in any way. As if it was never requested in the first place.
+
+        By default, this method returns True, so that all records are included.
+        """
+
+        return True
