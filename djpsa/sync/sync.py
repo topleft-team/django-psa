@@ -4,7 +4,6 @@ from typing import List, Any
 from django.utils import timezone
 from django.db import transaction, IntegrityError
 from django.conf import settings
-from abc import ABC, abstractmethod
 
 from djpsa.sync.models import SyncJob
 from djpsa.utils import get_djpsa_settings
@@ -72,49 +71,6 @@ class SyncResults:
         self.skipped_count = 0
         self.deleted_count = 0
         self.synced_ids = set()
-
-
-class AbstractSyncRelated(ABC):
-    """
-    Abstract class for synchronizers that sync related objects.
-    """
-
-    def sync_related(self, instance):
-        """
-        Sync related objects for the given instance.
-        """
-        sync_classes = self.get_related_synchronizers(instance)
-
-        for sync_class in sync_classes:
-            self._relation_sync(*sync_class)
-
-    @abstractmethod
-    def get_related_synchronizers(self, instance):
-        """
-        Return a list of related synchronizers.
-        """
-        pass
-
-    @staticmethod
-    def _relation_sync(synchronizer, filter_params):
-        """
-        Perform the sync specifically for records related to the given
-        instance.
-        """
-
-        results = SyncResults()
-
-        # Set of IDs of all records related to the parent object
-        # to sync, to delete only related stale records.
-        initial_ids = synchronizer.instance_ids(filter_params=filter_params)
-        results = synchronizer.fetch_records(results, )
-
-        results.deleted_count = synchronizer.prune_stale_records(
-            initial_ids, results.synced_ids
-        )
-
-        return results.created_count, results.updated_count, \
-            results.skipped_count, results.deleted_count
 
 
 class Synchronizer:
@@ -452,3 +408,39 @@ class Synchronizer:
         """
 
         return True
+
+    def sync_related(self, instance):
+        """
+        Sync related objects for the given instance.
+        """
+        sync_classes = self.get_related_synchronizers(instance)
+
+        for sync_class in sync_classes:
+            self._relation_sync(*sync_class)
+
+    def get_related_synchronizers(self, instance):
+        """
+        Return a list of related synchronizers.
+        """
+        return []
+
+    @staticmethod
+    def _relation_sync(synchronizer, filter_params):
+        """
+        Perform the sync specifically for records related to the given
+        instance.
+        """
+
+        results = SyncResults()
+
+        # Set of IDs of all records related to the parent object
+        # to sync, to delete only related stale records.
+        initial_ids = synchronizer.instance_ids(filter_params=filter_params)
+        results = synchronizer.fetch_records(results, )
+
+        results.deleted_count = synchronizer.prune_stale_records(
+            initial_ids, results.synced_ids
+        )
+
+        return results.created_count, results.updated_count, \
+            results.skipped_count, results.deleted_count

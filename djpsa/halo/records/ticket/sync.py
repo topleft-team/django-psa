@@ -6,7 +6,6 @@ from dateutil.parser import parse
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo import sync
-from djpsa.sync.sync import AbstractSyncRelated
 from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
@@ -17,7 +16,6 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                          sync.CreateMixin,
                          sync.UpdateMixin,
                          sync.DeleteMixin,
-                         AbstractSyncRelated,
                          sync.HaloSynchronizer,
                          ):
     response_key = 'tickets'
