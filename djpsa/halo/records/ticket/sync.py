@@ -6,6 +6,8 @@ from dateutil.parser import parse
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo import sync
+from djpsa.halo.records.action.sync import ActionSynchronizer
+from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
 
@@ -170,3 +172,29 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             instance.agent = None
         if instance.client_id == UNASSIGNED_CLIENT_ID:
             instance.client = None
+
+    def get_related_synchronizers(self, instance):
+        """
+        Return a list of related synchronizers.
+        """
+        sync_classes = []
+
+        appointment_sync = AppointmentSynchronizer(
+            full=True,
+            conditions=[{
+                'ticket_id': instance.id
+            }]
+        )
+
+        sync_classes.append((appointment_sync, {'ticket': instance.id}))
+
+        action_sync = ActionSynchronizer(
+            full=True,
+            parent_object_id=instance.id,
+            conditions=[{
+                'ticket_id': instance.id
+            }])
+
+        sync_classes.append((action_sync, {'ticket': instance.id}))
+
+        return sync_classes
