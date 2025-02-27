@@ -17,6 +17,9 @@ from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.team.sync import TeamSynchronizer
 from djpsa.halo.records.budgettype.sync import BudgetTypeSynchronizer
 from djpsa.halo.records.budgetdata.sync import BudgetDataSynchronizer
+from djpsa.halo.records.outcome.sync import OutcomeSynchronizer
+from djpsa.halo.records.chargerate.sync import ChargeRateSynchronizer
+from djpsa.halo.records.timesheetevent.sync import TimeSheetEventSynchronizer
 
 from djpsa.sync.grades import SyncGrades
 
@@ -49,6 +52,8 @@ class HaloSyncGrades(SyncGrades):
             SiteSynchronizer,
             PrioritySynchronizer,
             TicketTypeSynchronizer,
+            ChargeRateSynchronizer,
+            OutcomeSynchronizer,
             TeamSynchronizer,
             BudgetTypeSynchronizer,
             BudgetDataSynchronizer,
@@ -63,6 +68,8 @@ sync_command_list = [
         ('site', (SiteSynchronizer, _('Site'))),
         ('user', (HaloUserSynchronizer, _('User'))),
         ('agent', (AgentSynchronizer, _('Agent'))),
+        ('chargerate', (ChargeRateSynchronizer, _('ChargeRate'))),
+        ('outcome', (OutcomeSynchronizer, _('Outcome'))),
         ('ticket_type', (TicketTypeSynchronizer, _('TicketType'))),
         ('ticket', (TicketSynchronizer, _('Ticket'))),
         ('appointment', (AppointmentSynchronizer, _('Appointment'))),

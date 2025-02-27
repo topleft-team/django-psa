@@ -51,7 +51,8 @@ class CallBackView(views.CsrfExemptMixin,
             if record_type in data:
                 sync = sync_class()
 
-                instance, _ = sync.update_or_create_instance(data.get(record_type))
+                instance, _ = sync.update_or_create_instance(
+                    data.get(record_type))
 
                 # Sync related records, actions, appointments, etc.
                 sync.sync_related(instance)
