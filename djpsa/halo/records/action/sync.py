@@ -1,6 +1,7 @@
 from djpsa.halo import models
 from djpsa.halo.records import api
 from djpsa.halo import sync
+from djpsa.halo.records.halouser.model import HaloUser
 
 
 class ActionSynchronizer(sync.ResponseKeyMixin,
@@ -20,6 +21,7 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         'ticket_id': (models.TicketTracker, 'ticket'),
         'project_id': (models.TicketTracker, 'project'),
         'who_agentid': (models.Agent, 'agent'),
+        'outcome_id': (models.Outcome, 'outcome'),
     }
 
     def update_or_create_instance(self, json_data):
@@ -47,6 +49,8 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         instance.time_taken = json_data.get('timetaken')
         instance.time_taken_adjusted = json_data.get('timetakenadjusted')
         instance.time_taken_days = json_data.get('timetakendays')
+        instance.non_billable_time = json_data.get('nonbilltime')
+        instance.travel_time = json_data.get('traveltime')
         instance.note = json_data.get('note')
         instance.action_charge_amount = json_data.get('actionchargeamount')
         instance.action_charge_hours = json_data.get('actionchargehours')
@@ -61,3 +65,12 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         instance.important = json_data.get('important', False)
 
         self.set_relations(instance, json_data)
+
+    def create(self, data, *args, **kwargs):
+
+        # Halo impersonation is a bit weird, we need to get the agent's
+        # username from the user record related to the agent. Also, the
+        # username field is called "name".
+        data['agent'] = HaloUser.objects.get(agent=data['agent']).name
+
+        return super().create(data, *args, **kwargs)

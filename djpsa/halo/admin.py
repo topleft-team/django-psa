@@ -84,6 +84,7 @@ class SiteAdmin(admin.ModelAdmin):
 class ActionAdmin(admin.ModelAdmin):
     list_display = (
         'id',
+        'outcome',
         'action_arrival_date',
         'action_completion_date',
         'time_taken',
@@ -92,9 +93,21 @@ class ActionAdmin(admin.ModelAdmin):
         ['id', 'ticket__id', 'time_taken', 'project__id', 'agent__id']
 
 
+@admin.register(models.Outcome)
+class OutcomeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'outcome')
+    search_fields = ['id', 'name']
+
+
 @admin.register(models.Team)
 class TeamAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'ticket_count')
+    search_fields = ['id', 'name']
+
+
+@admin.register(models.ChargeRate)
+class ChargeRateAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')
     search_fields = ['id', 'name']
 
 

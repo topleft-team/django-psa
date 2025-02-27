@@ -4,7 +4,10 @@ from model_utils import FieldTracker
 
 class HaloUser(models.Model):
 
+    # This is their username, even though it comes through the API
+    # as name.
     name = models.CharField(max_length=255, blank=True, null=True)
+
     first_name = models.CharField(max_length=255, blank=True, null=True)
     initials = models.CharField(max_length=10, blank=True, null=True)
     surname = models.CharField(max_length=255, blank=True, null=True)
