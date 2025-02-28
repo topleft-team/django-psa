@@ -10,6 +10,7 @@ from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
+from djpsa.utils import get_djpsa_settings
 
 
 class TicketSynchronizer(sync.ResponseKeyMixin,
@@ -42,10 +43,25 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                  **kwargs: Any):
         super().__init__(full, conditions, *args, **kwargs)
 
-        if full:
-            self.client.add_condition({
-                'open_only': True,
-            })
+        self.client.add_condition({
+            'open_only': True,
+        })
+
+
+    def prune_stale_records(self, initial_ids, synced_ids):
+        # Override the default prune_stale_records method to keep closed
+        # tickets for a certain number of days.
+
+        djpsa_settings = get_djpsa_settings()
+        keep_closed_days = djpsa_settings['keep_closed_days']
+
+        closed_date_cutoff = timezone.now() - timezone.timedelta(days=keep_closed_days)
+
+        tickets = models.Ticket.objects.filter(date_closed__lt=closed_date_cutoff)
+        initial_ids = initial_ids - set(tickets.values_list('id', flat=True))
+
+        return super().prune_stale_records(initial_ids, synced_ids)
+
 
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get('id')
@@ -134,6 +150,10 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         deadline_date = json_data.get('deadlinedate')
         if deadline_date:
             instance.deadline_date = sync.empty_date_parser(deadline_date)
+
+        date_closed = json_data.get('dateclosed')
+        if date_closed:
+            instance.date_closed = sync.empty_date_parser(date_closed)
 
         start_date = json_data.get('startdate')
         if start_date:

@@ -61,6 +61,7 @@ def get_djpsa_settings():
         'max_attempts': 3,
         'callback_root': None,
         'callback_description': 'django-psa',
+        'keep_closed_days': 1,
     }
 
     if hasattr(settings, 'DJPSA_CONF_CALLABLE'):
