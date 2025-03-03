@@ -184,7 +184,8 @@ class Synchronizer:
             if not self._try_validate(record):
                 # Skip this record, if it doesn't meet some criteria
                 # defined in a child synchronizer. Do not count it
-                # as a skipped record.
+                # as a skipped record because we only count records
+                # that we want in the local DB.
                 continue
 
             try:

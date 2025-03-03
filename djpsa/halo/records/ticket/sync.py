@@ -43,25 +43,29 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                  **kwargs: Any):
         super().__init__(full, conditions, *args, **kwargs)
 
-        self.client.add_condition({
-            'open_only': True,
-        })
+    def _try_validate(self, record):
 
+        date_closed = record.get('dateclosed')
 
-    def prune_stale_records(self, initial_ids, synced_ids):
-        # Override the default prune_stale_records method to keep closed
-        # tickets for a certain number of days.
+        if not date_closed:
+            # Not closed, return true immediately
+            return True
 
-        djpsa_settings = get_djpsa_settings()
-        keep_closed_days = djpsa_settings['keep_closed_days']
+        true_date_closed = sync.empty_date_parser(date_closed)
 
-        closed_date_cutoff = timezone.now() - timezone.timedelta(days=keep_closed_days)
+        if true_date_closed:
+            djpsa_settings = get_djpsa_settings()
+            keep_closed_days = djpsa_settings['keep_closed_days']
 
-        tickets = models.Ticket.objects.filter(date_closed__lt=closed_date_cutoff)
-        initial_ids = initial_ids - set(tickets.values_list('id', flat=True))
+            closed_date_cutoff = \
+                timezone.now() - timezone.timedelta(days=keep_closed_days)
 
-        return super().prune_stale_records(initial_ids, synced_ids)
+            if true_date_closed < closed_date_cutoff:
+                # Closed, but older than the cutoff
+                return False
 
+        # Closed, but within the cutoff OR date_closed is not a valid date
+        return True
 
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get('id')
