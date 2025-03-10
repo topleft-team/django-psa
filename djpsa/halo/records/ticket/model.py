@@ -19,18 +19,27 @@ class ItilRequestType(Enum):
 
 
 class TicketOnlyManager(models.Manager):
+    """
+    Tickets are tickets that are not in the appropriate ITIL request type
+    and don't have a parent project.
+    """
     def get_queryset(self):
         return super().get_queryset().exclude(
-            itil_request_type=ItilRequestType.PROJECTS.value)
+            itil_request_type=ItilRequestType.PROJECTS.value,
+            project=None,
+        )
 
 
 class ProjectOnlyManager(models.Manager):
+    """
+    Projects are tickets with the appropriate ITIL request type
+    and have no relation to a parent project.
+    """
     def get_queryset(self):
         return super().get_queryset().filter(
-            itil_request_type=ItilRequestType.PROJECTS.value)
-
-    def projects_only(self):
-        return self.filter(itil_request_type=ItilRequestType.PROJECTS.value)
+            itil_request_type=ItilRequestType.PROJECTS.value,
+            project=None,
+        )
 
 
 class Ticket(models.Model):
