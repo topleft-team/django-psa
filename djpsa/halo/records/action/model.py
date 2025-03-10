@@ -26,7 +26,6 @@ class Action(models.Model):
     charge_rate = models.IntegerField(blank=True, null=True)
     hidden_from_user = models.BooleanField(default=False)
     important = models.BooleanField(default=False)
-    outcome = models.CharField(max_length=255, blank=True, null=True)
 
     ticket = models.ForeignKey(
         'Ticket',
@@ -44,6 +43,8 @@ class Action(models.Model):
     )
     agent = models.ForeignKey(
         'Agent', blank=True, null=True, on_delete=models.CASCADE)
+    outcome = models.ForeignKey(
+        'Outcome', blank=True, null=True, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name_plural = "Actions"
@@ -72,8 +73,8 @@ class Action(models.Model):
         'important': 'important',
         'ticket': 'ticket_id',
         'project': 'project_id',
-        'agent': 'who_agentid',
-        'outcome': 'outcome',
+        'agent': 'who',
+        'outcome': 'outcome_id',
     }
 
 

@@ -15,3 +15,5 @@ from djpsa.halo.records.action.model import Action, ActionTracker
 from djpsa.halo.records.team.model import Team, TeamTracker
 from djpsa.halo.records.budgettype.model import BudgetType, BudgetTypeTracker
 from djpsa.halo.records.budgetdata.model import BudgetData, BudgetDataTracker
+from djpsa.halo.records.outcome.model import Outcome, OutcomeTracker
+from djpsa.halo.records.chargerate.model import ChargeRate, ChargeRateTracker

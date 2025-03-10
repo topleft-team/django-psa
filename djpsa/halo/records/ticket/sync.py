@@ -109,7 +109,7 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             json_data.get('tickettags', instance.ticket_tags)
         instance.appointment_type = json_data.get('appointment_type')
         instance.impact_level = json_data.get('impactlevel')
-        instance.iti_request_type = json_data.get('itil_requesttype_id')
+        instance.itil_request_type = json_data.get('itil_requesttype_id')
 
         date_occurred = json_data.get('dateoccurred')
         if date_occurred:
