@@ -115,11 +115,14 @@ class Synchronizer:
 
     @log_sync_job
     def sync(self):
-        sync_job_qset = self.get_sync_job_qset().filter(success=True)
+        if not self.full:
+            sync_job_qset = self.get_sync_job_qset().filter(success=True)
 
-        last_sync_job_condition = self._get_last_sync_job_time(sync_job_qset)
-        if last_sync_job_condition:
-            self.client.add_condition(last_sync_job_condition)
+            last_sync_job_condition = \
+                self._get_last_sync_job_time(sync_job_qset)
+
+            if last_sync_job_condition:
+                self.client.add_condition(last_sync_job_condition)
 
         results = SyncResults()
 
@@ -129,6 +132,8 @@ class Synchronizer:
 
         results = self.fetch_records(results)
 
+        results = self._post_sync_operations(results)
+
         if self.full:
             results.deleted_count = self.prune_stale_records(
                 initial_ids, results.synced_ids
@@ -136,6 +141,9 @@ class Synchronizer:
 
         return results.created_count, results.updated_count, \
             results.skipped_count, results.deleted_count
+
+    def _post_sync_operations(self, results):
+        return results
 
     def instance_ids(self, filter_params=None):
         ids = self.model_class.objects.all().order_by('id') \
