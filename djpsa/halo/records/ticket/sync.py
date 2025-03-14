@@ -10,6 +10,7 @@ from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
+from djpsa.utils import get_djpsa_settings
 
 
 class TicketSynchronizer(sync.ResponseKeyMixin,
@@ -42,10 +43,9 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                  **kwargs: Any):
         super().__init__(full, conditions, *args, **kwargs)
 
-        if full:
-            self.client.add_condition({
-                'open_only': True,
-            })
+        self.client.add_condition({
+            'open_only': True,
+        })
 
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get('id')
@@ -135,6 +135,10 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         if deadline_date:
             instance.deadline_date = sync.empty_date_parser(deadline_date)
 
+        date_closed = json_data.get('dateclosed')
+        if date_closed:
+            instance.date_closed = sync.empty_date_parser(date_closed)
+
         start_date = json_data.get('startdate')
         if start_date:
             instance.start_date = sync.empty_date_parser(start_date)
@@ -173,6 +177,26 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         if instance.client_id == UNASSIGNED_CLIENT_ID:
             instance.client = None
 
+    def _post_sync_operations(self, results):
+        if self.full:
+            # Perform second sync for tickets that were closed
+            # within the keep_closed_days setting.
+
+            self.client.remove_condition('open_only')
+
+            self.client.add_condition({
+                'lastupdatefromdate':
+                    self._get_keep_closed_cutoff().strftime(
+                        '%Y-%m-%dT%H:%M:%S.%fZ')
+            })
+            self.client.add_condition({
+                'closed_only': True,
+            })
+
+            results = self.fetch_records(results)
+
+        return results
+
     def get_related_synchronizers(self, instance):
         """
         Return a list of related synchronizers.
@@ -198,3 +222,32 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         sync_classes.append((action_sync, {'ticket': instance.id}))
 
         return sync_classes
+
+    def _try_validate(self, record):
+        # Prevents closed tickets that were updated from re-syncing
+        # every time there is an update to them.
+
+        date_closed = record.get('dateclosed')
+
+        if not date_closed:
+            # Not closed, return true immediately.
+            # Shouldn't happen, but just in case...
+            return True
+
+        true_date_closed = sync.empty_date_parser(date_closed)
+
+        if true_date_closed:
+            closed_date_cutoff = self._get_keep_closed_cutoff()
+
+            if true_date_closed < closed_date_cutoff:
+                # Closed, but older than the cutoff
+                return False
+
+        # Closed, but within the cutoff OR date_closed is not a valid date
+        return True
+
+    def _get_keep_closed_cutoff(self):
+        djpsa_settings = get_djpsa_settings()
+        keep_closed_days = djpsa_settings['keep_closed_days']
+
+        return timezone.now() - timezone.timedelta(days=keep_closed_days)

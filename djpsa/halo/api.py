@@ -83,6 +83,13 @@ class HaloAPIClient(APIClient):
             endpoint_url=self._format_endpoint(record_id)
         )
 
+    def remove_condition(self, condition):
+        # self.conditions is a list of dictionaries, so we need to remove the
+        # dictionary that contains the key we want to remove, value doesn't
+        # matter
+        self.conditions = \
+            [c for c in self.conditions if c.get(condition) is None]
+
     def _format_endpoint(self, record_id=None):
 
         if record_id:

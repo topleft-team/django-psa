@@ -85,6 +85,7 @@ class Ticket(models.Model):
     deadline_date = models.DateTimeField(blank=True, null=True)
     last_action_date = models.DateField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
+    date_closed = models.DateTimeField(blank=True, null=True)
 
     # Target and Start date are actually 2 fields from Halo,
     # but we are syncing both into the same field in the model.
@@ -126,6 +127,7 @@ class Ticket(models.Model):
         "details": "details",
         "last_action_date": "lastactiondate",
         "last_update": "last_update",
+        "date_closed": "dateclosed",
         "user_email": "useremail",
         "reported_by": "reportedby",
         "end_user_status": "enduserstatus",
