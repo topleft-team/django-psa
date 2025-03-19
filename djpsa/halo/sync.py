@@ -3,6 +3,8 @@ import logging
 from django.utils import timezone
 from dateutil.parser import parse
 from djpsa.sync.sync import Synchronizer
+from django.db.models.fields import DateTimeField
+from django.db.models.fields.related import ForeignKey
 
 # README #
 #
@@ -57,10 +59,28 @@ class ApiConvertMixin:
             api_data[self.model_class.API_FIELDS[key]] = value
         return api_data
 
+    def _convert_fields(self, data):
+        """
+        Convert field values as necessary:
+        * Datetime fields to ISO string format.
+        * Foreign keys to the ID of the related object.
+        """
+        for key, value in data.items():
+            field_class = self.model_class._meta.get_field(key).__class__
+            if field_class == DateTimeField:
+                data[key] = value.isoformat() if value else None
+            elif key == 'team':
+                # Team requires the name of the team, not the ID. :rageguy:
+                data[key] = value.name if value else None
+            elif field_class == ForeignKey:
+                data[key] = value.id if value else None
+        return data
+
 
 class CreateMixin(ApiConvertMixin):
 
     def create(self, data, *args, **kwargs):
+        data = self._convert_fields(data)
         body = self._convert_fields_to_api_format(data)
         response = self.client.create(body)
 
@@ -71,7 +91,9 @@ class CreateMixin(ApiConvertMixin):
 class UpdateMixin(ApiConvertMixin):
 
     def update(self, record, data, *args, **kwargs):
+        data = self._convert_fields(data)
         body = self._convert_fields_to_api_format(data)
+
         response = self.client.update(record.id, body)
 
         instance, _ = self.update_or_create_instance(response)

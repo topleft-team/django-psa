@@ -126,6 +126,10 @@ class HaloAPIClient(APIClient):
         else:
             headers = token_header
 
+        logger.debug(
+            'Making %s request to %s: params %s, kwargs %s',
+            method, endpoint_url, params, kwargs
+        )
         # Make the actual request
         response = requests.request(
             method,

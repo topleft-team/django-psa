@@ -21,7 +21,7 @@ class SLA(models.Model):
         verbose_name_plural = "SLAs"
 
     def __str__(self):
-        return f"Site {self.id} - {self.name}"
+        return str(self.name)
 
 
 class SLATracker(SLA):
