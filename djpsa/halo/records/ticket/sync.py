@@ -141,26 +141,31 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
 
         start_date = json_data.get('startdate')
         if start_date:
-            instance.start_date = sync.empty_date_parser(start_date)
+            parsed_start_date = sync.empty_date_parser(start_date)
 
-            instance.start_date = instance.start_date.replace(
+            parsed_start_date = parsed_start_date.replace(
                 hour=parse(json_data.get('starttime')).hour,
                 minute=parse(json_data.get('starttime')).minute,
                 second=parse(json_data.get('starttime')).second
-            ) if instance.start_date else None  # Don't set time if start
+            ) if parsed_start_date else None  # Don't set time if start
             # date is an impossible date.
 
+            if parsed_start_date:
+                instance.start_date = parsed_start_date.Date()
+
         target_date = json_data.get('targetdate')
-
         if target_date:
-            instance.target_date = sync.empty_date_parser(target_date)
+            parsed_target_date = sync.empty_date_parser(target_date)
 
-            instance.target_date = instance.target_date.replace(
+            parsed_target_date = parsed_target_date.replace(
                 hour=parse(json_data.get('targettime')).hour,
                 minute=parse(json_data.get('targettime')).minute,
                 second=parse(json_data.get('targettime')).second
-            ) if instance.target_date else None  # Don't set time if target
+            ) if parsed_target_date else None  # Don't set time if target
             # date is an impossible date.
+
+            if parsed_target_date:
+                instance.target_date = parsed_target_date.Date()
 
         last_incoming_email_date = json_data.get('lastincomingemaildate')
         if last_incoming_email_date:
