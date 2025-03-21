@@ -93,7 +93,7 @@ class Ticket(models.Model):
         blank=True, null=True,
         verbose_name='Deadline',
     )
-    last_action_date = models.DateField(blank=True, null=True)
+    last_action_date = models.DateTimeField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
     date_closed = models.DateTimeField(blank=True, null=True)
 
@@ -123,7 +123,8 @@ class Ticket(models.Model):
     service_status_note = \
         models.TextField(blank=True, null=True)
     ticket_tags = models.TextField(blank=True, null=True)
-    appointment_type = models.CharField(max_length=255, blank=True, null=True)
+    appointment_type = models.IntegerField(
+        max_length=255, blank=True, null=True)
     itil_request_type = models.IntegerField(
         choices=[(
             e.value,
