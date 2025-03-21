@@ -22,6 +22,7 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         'project_id': (models.TicketTracker, 'project'),
         'who_agentid': (models.Agent, 'agent'),
         'outcome_id': (models.Outcome, 'outcome'),
+        'charge_rate_id': (models.ChargeRate, 'chargerate'),
     }
 
     def update_or_create_instance(self, json_data):
@@ -59,7 +60,6 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         instance.action_non_charge_hours = \
             json_data.get('actionnonchargehours')
         instance.attachment_count = json_data.get('attachment_count')
-        instance.charge_rate = json_data.get('chargerate')
         instance.act_is_billable = json_data.get('actisbillable', False)
         instance.hidden_from_user = json_data.get('hiddenfromuser', False)
         instance.important = json_data.get('important', False)
@@ -67,7 +67,6 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         self.set_relations(instance, json_data)
 
     def create(self, data, *args, **kwargs):
-
         # Halo impersonation is a bit weird, we need to get the agent's
         # username from the user record related to the agent. Also, the
         # username field is called "name".

@@ -10,7 +10,7 @@ class Status(models.Model):
         verbose_name_plural = "Statuses"
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class StatusTracker(Status):

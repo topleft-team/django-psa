@@ -22,20 +22,24 @@ class TimeSheetEventSynchronizer(
     ]
 
     def create(self, data, *args, **kwargs):
-
-        # Example data format:
-        # {
-        #   "end_date": "2025-02-25T18:26:00.000Z",
-        #   "start_date": "2025-02-25T18:10:00.000Z",
-        #   "ticket_id": 2267,
-        #   "agent_id": "3",
-        #   "charge_rate": "1",
-        #   "note": "log time action test, delete me",
-        # }
-
+        """
+        Example data format:
+        {
+          "end_date": "2025-02-25T18:26:00.000Z",
+          "start_date": "2025-02-25T18:10:00.000Z",
+          "ticket_id": 2267,
+          "agent_id": "3",
+          "charge_rate": "1",
+          "note": "log time action test, delete me",
+        }
+        """
         for field in self.required_fields:
             if field not in data:
                 raise ValueError(f"Missing required field: {field}")
+
+        # Convert datetimes to string format.
+        data['start_date'] = data['start_date'].isoformat()
+        data['end_date'] = data['end_date'].isoformat()
 
         # Don't create a new ticket when logging time
         data['lognewticket'] = False
@@ -49,7 +53,7 @@ class TimeSheetEventSynchronizer(
         self.client.create(data)
 
         ticket = models.Ticket.objects.get(id=data['ticket_id'])
-        synch = TicketSynchronizer()
 
         # Sync related to pull down the newly created action
-        synch.sync_related(ticket)
+        sync = TicketSynchronizer()
+        sync.sync_related(ticket)

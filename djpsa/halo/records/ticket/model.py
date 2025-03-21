@@ -34,6 +34,8 @@ class ProjectOnlyManager(models.Manager):
     """
     Projects are tickets with the appropriate ITIL request type
     and have no relation to a parent project.
+
+    This should match the logic of the is_project method.
     """
     def get_queryset(self):
         return super().get_queryset().filter(
@@ -57,7 +59,9 @@ class Ticket(models.Model):
     sla = models.ForeignKey(
         'SLA', blank=True, null=True, on_delete=models.CASCADE)
     user = models.ForeignKey(
-        'HaloUser', blank=True, null=True, on_delete=models.CASCADE)
+        'HaloUser', blank=True, null=True, on_delete=models.CASCADE,
+        verbose_name='Contact',
+    )
     site = models.ForeignKey(
         'Site', blank=True, null=True, on_delete=models.CASCADE)
     type = models.ForeignKey(
@@ -79,10 +83,16 @@ class Ticket(models.Model):
     sla_hold_time = models.FloatField(blank=True, null=True)
     date_occurred = models.DateTimeField(blank=True, null=True)
     respond_by_date = models.DateTimeField(blank=True, null=True)
-    fix_by_date = models.DateTimeField(blank=True, null=True)
+    fix_by_date = models.DateTimeField(
+        blank=True, null=True,
+        verbose_name='Fix by',
+    )
     date_assigned = models.DateTimeField(blank=True, null=True)
     response_date = models.DateTimeField(blank=True, null=True)
-    deadline_date = models.DateTimeField(blank=True, null=True)
+    deadline_date = models.DateTimeField(
+        blank=True, null=True,
+        verbose_name='Deadline',
+    )
     last_action_date = models.DateField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
     date_closed = models.DateTimeField(blank=True, null=True)
@@ -100,7 +110,10 @@ class Ticket(models.Model):
     project_time_actual = models.FloatField(blank=True, null=True)
     project_money_actual = models.FloatField(blank=True, null=True)
     cost = models.FloatField(blank=True, null=True)
-    estimate = models.FloatField(blank=True, null=True)
+    estimate = models.FloatField(
+        blank=True, null=True,
+        help_text='Effort in hours',
+    )
     estimated_days = models.FloatField(blank=True, null=True)
     exclude_from_sla = models.BooleanField(default=False)
     reviewed = models.BooleanField(default=False)
@@ -117,6 +130,7 @@ class Ticket(models.Model):
             e.name.replace('_', ' ').title()
         ) for e in ItilRequestType],
         default=ItilRequestType.INCIDENT.value,
+        verbose_name='ITIL request type'
     )
 
     use = models.CharField(max_length=255, blank=True, null=True)
@@ -137,6 +151,7 @@ class Ticket(models.Model):
         "category_4": "category4",
         "inactive": "inactive",
         "impact": "impact",
+        "deadline_date": "deadlinedate",
         "flagged": "flagged",
         "on_hold": "onhold",
         "cost": "cost",
@@ -164,6 +179,7 @@ class Ticket(models.Model):
         "user": "user_id",
         "site": "site_id",
         "type": "tickettype_id",
+        "itil_request_type": "itil_requesttype_id",
         "parent": "parent_id",
     }
 
@@ -175,7 +191,7 @@ class Ticket(models.Model):
         verbose_name_plural = "Tickets"
 
     def __str__(self):
-        return f"Ticket {self.id} - {self.summary}"
+        return str(self.summary)
 
     @property
     def budget_hours(self):
@@ -185,6 +201,15 @@ class Ticket(models.Model):
             budget_hours += budget.hours
 
         return budget_hours
+
+    def is_project(self):
+        """
+        Return true if this is a project.
+
+        This should match the projects_only manager logic.
+        """
+        return (self.itil_request_type == ItilRequestType.PROJECTS.value and
+                self.project is None)
 
 
 class TicketTracker(Ticket):

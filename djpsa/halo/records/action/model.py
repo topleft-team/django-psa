@@ -23,7 +23,6 @@ class Action(models.Model):
     action_non_charge_hours = models.FloatField(blank=True, null=True)
     act_is_billable = models.BooleanField(default=False)
     attachment_count = models.IntegerField(blank=True, null=True)
-    charge_rate = models.IntegerField(blank=True, null=True)
     hidden_from_user = models.BooleanField(default=False)
     important = models.BooleanField(default=False)
 
@@ -45,6 +44,8 @@ class Action(models.Model):
         'Agent', blank=True, null=True, on_delete=models.CASCADE)
     outcome = models.ForeignKey(
         'Outcome', blank=True, null=True, on_delete=models.CASCADE)
+    charge_rate = models.ForeignKey(
+        'ChargeRate', blank=True, null=True, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name_plural = "Actions"
