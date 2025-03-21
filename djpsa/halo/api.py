@@ -178,7 +178,8 @@ class HaloAPIClient(APIClient):
                     logger.error(f"Unknown error format: {result}")
                     error_desc = "An unknown error has occurred."
             except Exception as e:
-                logger.error(f"Failed to process error from response: {result}, {e}")
+                logger.error(
+                    f"Failed to process error from response: {result}, {e}")
                 raise e
 
         return f"{error}: {error_desc}" if error else error_desc
