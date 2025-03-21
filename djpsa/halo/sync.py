@@ -63,6 +63,7 @@ class ApiConvertMixin:
         """
         Convert field values as necessary:
         * Datetime fields to ISO string format.
+        * Team just wants a name, not the ID.
         * Foreign keys to the ID of the related object.
         """
         for key, value in data.items():
@@ -73,7 +74,13 @@ class ApiConvertMixin:
                 # Team requires the name of the team, not the ID. :rageguy:
                 data[key] = value.name if value else None
             elif field_class == ForeignKey:
-                data[key] = value.id if value else None
+                try:
+                    data[key] = value.id if value else None
+                except AttributeError:
+                    # The field is a string, not a model instance.
+                    data[key] = value
+            else:
+                data[key] = value
         return data
 
 

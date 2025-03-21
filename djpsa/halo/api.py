@@ -166,16 +166,20 @@ class HaloAPIClient(APIClient):
             error = result['error']
             error_desc = error['error_description']
         except KeyError:
-            if len(result) == 1:
-                # This is about the best we can do. The Halo API
-                # doesn't provide a standard error format. There's
-                # no telling how deep the rabbit hole goes. We will
-                # just have to handle new error types as they come.
-                error_desc = list(result.values())[0] \
-                    .replace("\r", "").replace("\n", "").replace("\'", "")
-            else:
-                logger.error(f"Unknown error format: {result}")
-                error_desc = "An unknown error has occurred."
+            try:
+                if len(result) == 1:
+                    # This is about the best we can do. The Halo API
+                    # doesn't provide a standard error format. There's
+                    # no telling how deep the rabbit hole goes. We will
+                    # just have to handle new error types as they come.
+                    error_desc = list(result.values())[0] \
+                        .replace("\r", "").replace("\n", "").replace("\'", "")
+                else:
+                    logger.error(f"Unknown error format: {result}")
+                    error_desc = "An unknown error has occurred."
+            except Exception as e:
+                logger.error(f"Failed to process error from response: {result}, {e}")
+                raise e
 
         return f"{error}: {error_desc}" if error else error_desc
 
