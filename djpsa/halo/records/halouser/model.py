@@ -36,7 +36,7 @@ class HaloUser(models.Model):
         verbose_name_plural = "Halo Users"
 
     def __str__(self):
-        return f"Halo User {self.id} - {self.name}"
+        return str(self.name)
 
 
 class HaloUserTracker(HaloUser):

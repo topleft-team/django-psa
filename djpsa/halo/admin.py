@@ -58,7 +58,7 @@ class TicketTypeAdmin(admin.ModelAdmin):
 
 @admin.register(models.HaloUser)
 class HaloUserAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'email', 'active')
+    list_display = ('id', 'name', 'email', 'active', 'agent', 'client', 'site')
     search_fields = ['id', 'name', 'email']
 
 
