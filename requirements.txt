@@ -1,4 +1,4 @@
-django==4.2.11
+django==4.2.20
 requests
 setuptools
 python-dateutil==2.8.2
