@@ -2,13 +2,21 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
-import djpsa
 
 LONG_DESCRIPTION = open('README.md').read()
 
+VERSION = (0, 15, '0a0')
+
+# pragma: no cover
+if VERSION[-1] != "final":
+    project_version = '.'.join(map(str, VERSION))
+else:
+    # pragma: no cover
+    project_version = '.'.join(map(str, VERSION[:-1]))
+
 setup(
     name="django-psa",
-    version=djpsa.__version__,
+    version=project_version,
     description='Django app for working with '
                 'various PSA REST API. Defines '
                 'models (tickets, companies, '
