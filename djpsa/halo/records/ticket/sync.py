@@ -151,7 +151,7 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             # date is an impossible date.
 
             if parsed_start_date:
-                instance.start_date = parsed_start_date.Date()
+                instance.start_date = parsed_start_date.date()
 
         target_date = json_data.get('targetdate')
         if target_date:
@@ -165,7 +165,7 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             # date is an impossible date.
 
             if parsed_target_date:
-                instance.target_date = parsed_target_date.Date()
+                instance.target_date = parsed_target_date.date()
 
         last_incoming_email_date = json_data.get('lastincomingemaildate')
         if last_incoming_email_date:
