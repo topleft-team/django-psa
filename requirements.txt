@@ -1,6 +1,6 @@
 django==4.2.20
 requests
-setuptools==78.0.2
+setuptools==75.3.2
 python-dateutil==2.8.2
 retrying
 django-model-utils==4.3.1
