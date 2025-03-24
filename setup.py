@@ -50,7 +50,7 @@ setup(
         'model-mommy',
         'django-coverage',
         'names',
-        'django-test-plus',
+        'django-environ'
     ],
     # Django likes to inspect apps for /migrations directories, and can't if
     # package is installed as an egg. zip_safe=False disables installation as
