@@ -158,7 +158,7 @@ class HaloAPIClient(APIClient):
         result = response.json()
         error = ""
 
-        if type(result) == str:
+        if isinstance(result, str):
             # Error responses can be a string.
             return result
 
