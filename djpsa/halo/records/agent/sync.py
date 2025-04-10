@@ -5,10 +5,12 @@ from djpsa.halo.records import api
 from djpsa.halo import sync
 
 
-class AgentSynchronizer(sync.HaloSynchronizer):
+class AgentSynchronizer(sync.ResponseKeyMixin,
+                        sync.HaloSynchronizer):
 
     model_class = models.AgentTracker
     client_class = api.AgentAPI
+    response_key = "results"
 
     def __init__(
             self,
