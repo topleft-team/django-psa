@@ -18,6 +18,7 @@ class CallBackView(views.CsrfExemptMixin,
                    views.JsonRequestResponseMixin, View):
     entity_type = None
     sync_class = None
+    callback_handler = None
 
     def post(self, request, *args, **kwargs):
         logger.debug(f"Received callback {request.path} {request.method}")
@@ -51,16 +52,31 @@ class CallBackView(views.CsrfExemptMixin,
         a child class if needed.
         """
 
-        sync = self.sync_class()
+        if self.callback_handler:
+            # Call the callback handler if it's defined
+            self.callback_handler(data)
+        else:
+            sync = self.sync_class()
 
-        instance, _ = sync.update_or_create_instance(
-            data.get(self.entity_type))
+            instance, _ = sync.update_or_create_instance(
+                data.get(self.entity_type))
 
-        # Sync related records, actions, appointments, etc.
-        sync.sync_related(instance)
+            # Sync related records, actions, appointments, etc.
+            sync.sync_related(instance)
 
 
 class TicketCallBackView(CallBackView):
 
     entity_type = 'ticket'
     sync_class = TicketSynchronizer
+
+    # This must be defined on child classes or the parent class
+    # handler will be overridden for each child class.
+    callback_handler = None
+
+    @classmethod
+    def register_callback_handler(cls, callback_handler):
+        """
+        Register a callback handler for the ticket callback.
+        """
+        cls.callback_handler = callback_handler
