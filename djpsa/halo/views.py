@@ -64,6 +64,13 @@ class CallBackView(views.CsrfExemptMixin,
             # Sync related records, actions, appointments, etc.
             sync.sync_related(instance)
 
+    @classmethod
+    def register_callback_handler(cls, callback_handler):
+        """
+        Register a callback handler for the ticket callback.
+        """
+        cls.callback_handler = callback_handler
+
 
 class TicketCallBackView(CallBackView):
 
@@ -73,10 +80,3 @@ class TicketCallBackView(CallBackView):
     # This must be defined on child classes or the parent class
     # handler will be overridden for each child class.
     callback_handler = None
-
-    @classmethod
-    def register_callback_handler(cls, callback_handler):
-        """
-        Register a callback handler for the ticket callback.
-        """
-        cls.callback_handler = callback_handler
