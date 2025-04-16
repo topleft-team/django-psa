@@ -176,14 +176,22 @@ class HaloAPIClient(APIClient):
                         # doesn't provide a standard error format. There's
                         # no telling how deep the rabbit hole goes. We will
                         # just have to handle new error types as they come.
-                        error_desc = list(result.values())[0] \
-                            .replace("\r", "").replace("\n", "").replace("\'", "")
+                        error_desc = (list(result.values())[0]
+                                      .replace(
+                                          "\r", ""
+                                      ).replace(
+                                          "\n", ""
+                                      ).replace(
+                                          "\'", "")
+                                      )
                     else:
                         logger.error(f"Unknown error format: {result}")
                         error_desc = "An unknown error has occurred."
                 except Exception as e:
                     logger.error(
-                        f"Failed to process error from response: {result}, {e}")
+                        f"Failed to process error from response: "
+                        f"{result}, {e}"
+                    )
                     raise e
 
         return f"{error}: {error_desc}" if error else error_desc
