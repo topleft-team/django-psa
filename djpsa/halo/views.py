@@ -16,10 +16,9 @@ logger = logging.getLogger(__name__)
 
 class CallBackView(views.CsrfExemptMixin,
                    views.JsonRequestResponseMixin, View):
-
-    CALLBACK_TYPES = {
-        'ticket': TicketSynchronizer,
-    }
+    entity_type = None
+    sync_class = None
+    callback_handler = None
 
     def post(self, request, *args, **kwargs):
         logger.debug(f"Received callback {request.path} {request.method}")
@@ -43,24 +42,41 @@ class CallBackView(views.CsrfExemptMixin,
             logger.error('Error decoding JSON for callback: %s', e)
             return HttpResponse(status=400)
 
-        sync = None
-
-        for record_type, sync_class in self.CALLBACK_TYPES.items():
-            # Searches for record type keys in data, i.e. if it's a ticket
-            # callback, it will find 'ticket'.
-            if record_type in data:
-                sync = sync_class()
-
-                instance, _ = sync.update_or_create_instance(
-                    data.get(record_type))
-
-                # Sync related records, actions, appointments, etc.
-                sync.sync_related(instance)
-                break
-
-        if sync is None:
-            # This is normal if we get a callback for a record type we don't
-            # care about somehow.
-            return HttpResponse(status=400)
+        self.handle(data)
 
         return HttpResponse(status=200)
+
+    def handle(self, data):
+        """
+        Do the interesting stuff here, so that it can be overridden in
+        a child class if needed.
+        """
+
+        if self.callback_handler:
+            # Call the callback handler if it's defined
+            self.callback_handler(data)
+        else:
+            sync = self.sync_class()
+
+            instance, _ = sync.update_or_create_instance(
+                data.get(self.entity_type))
+
+            # Sync related records, actions, appointments, etc.
+            sync.sync_related(instance)
+
+    @classmethod
+    def register_callback_handler(cls, callback_handler):
+        """
+        Register a callback handler for the ticket callback.
+        """
+        cls.callback_handler = callback_handler
+
+
+class TicketCallBackView(CallBackView):
+
+    entity_type = 'ticket'
+    sync_class = TicketSynchronizer
+
+    # This must be defined on child classes or the parent class
+    # handler will be overridden for each child class.
+    callback_handler = None
