@@ -37,8 +37,12 @@ class AgentSynchronizer(sync.ResponseKeyMixin,
         instance.colour = json_data.get('colour')
 
         teams = json_data.get('teams')
+        if teams and instance.tracker.previous('id') is not None:
+            # Teams can only be saved if the agent instance
+            # already exists in the database. If it doesn't exist
+            # yet, we'll let it be saved now and then next time this runs
+            # the teams will be set.
 
-        if teams:
             # Get the list of team IDs
             remote_team_ids = [team['team_id'] for team in teams]
 
