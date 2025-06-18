@@ -123,8 +123,7 @@ class Ticket(models.Model):
     service_status_note = \
         models.TextField(blank=True, null=True)
     ticket_tags = models.TextField(blank=True, null=True)
-    appointment_type = models.IntegerField(
-        max_length=255, blank=True, null=True)
+    appointment_type = models.IntegerField(blank=True, null=True)
     itil_request_type = models.IntegerField(
         choices=[(
             e.value,
