@@ -23,7 +23,11 @@ class CallBackView(views.CsrfExemptMixin,
     def post(self, request, *args, **kwargs):
         logger.debug(f"Received callback {request.path} {request.method}")
 
-        received_token = request.headers['Token']
+        try:
+            received_token = request.headers['Token']
+        except KeyError:
+            logger.error('Token header missing in webhook request')
+            return HttpResponse(status=401)
 
         computed_hash = hmac.new(
             settings.CALLBACK_SECRET.encode('utf-8'),
