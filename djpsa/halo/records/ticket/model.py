@@ -180,7 +180,7 @@ class Ticket(models.Model):
         "site": "site_id",
         "type": "tickettype_id",
         "itil_request_type": "itil_requesttype_id",
-        "parent": "parent_id",
+        "project": "parent_id",
     }
 
     objects = models.Manager()
