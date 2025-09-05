@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from djpsa.api.client import APIClient
-from djpsa.api.exceptions import APIError
+from djpsa.api.exceptions import APIError, APIClientError
 from djpsa.utils import LockNotAcquiredError, redis_lock
 
 logger = logging.getLogger(__name__)
@@ -275,7 +275,10 @@ class HaloAPITokenFetcher:
             token = response.json()['access_token']
         except requests.RequestException as e:
             logger.error(f"Failed to get new token: {e}")
-            raise APIError('{}'.format(e))
+            raise_cls = APIError
+            if e.response is not None and 400 <= e.response.status_code < 500:
+                raise_cls = APIClientError
+            raise raise_cls('{}'.format(e))
 
         cache.set(self._get_cache_name(), token, CACHE_EXPIRE_TIME)
         return token
