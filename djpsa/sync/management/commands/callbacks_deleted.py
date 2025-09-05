@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
-from djpsa.api.exceptions import APIError
+from djpsa.api.exceptions import APIClientError
 
 
 class Command(BaseCommand):
@@ -11,5 +11,5 @@ class Command(BaseCommand):
         handler = settings.PROVIDER.callback_handler()
         try:
             handler.ensure_deleted()
-        except APIError as e:
+        except APIClientError as e:
             raise CommandError(e)
