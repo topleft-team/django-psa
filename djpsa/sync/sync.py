@@ -302,6 +302,20 @@ class Synchronizer:
             )
             self._assign_null_relation(instance, model_field)
 
+    def _clean_data(self, data):
+        """
+        Clean the data from the API before using it to create/update
+        the model instance.
+        Override this method in child classes if needed.
+        """
+
+        # Remove any null bytes from string fields
+        for key, value in data.items():
+            if isinstance(value, str):
+                data[key] = value.replace("\x00", "\uFFFD")
+
+        return data
+
     def update_or_create_instance(self, api_instance):
         """
         Creates and returns an instance if it does not already exist.
@@ -315,6 +329,8 @@ class Synchronizer:
             result = CREATED
 
         try:
+            self._clean_data(api_instance)
+
             self._assign_field_data(instance, api_instance)
 
             if result == CREATED:
