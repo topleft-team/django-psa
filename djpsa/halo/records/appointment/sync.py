@@ -39,16 +39,15 @@ class AppointmentSynchronizer(sync.CreateMixin,
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get('id')
         instance.subject = json_data.get('subject')
-        instance.start_date = \
-            timezone.make_aware(
-                parse(json_data.get('start_date')),
-                timezone.utc
-            )
-        instance.end_date = \
-            timezone.make_aware(
-                parse(json_data.get('end_date')),
-                timezone.utc
-            )
+        start_date = json_data.get('start_date')
+        instance.start_date = timezone.make_aware(
+            parse(start_date), timezone.utc
+        ) if start_date else None
+
+        end_date = json_data.get('end_date')
+        instance.end_date = timezone.make_aware(
+            parse(end_date), timezone.utc
+        ) if end_date else None
         instance.appointment_type = json_data.get('appointment_type_name')
         instance.is_private = json_data.get('is_private')
         instance.is_task = json_data.get('is_task', False)
