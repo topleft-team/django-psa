@@ -193,6 +193,9 @@ class HaloAPIClient(APIClient):
                         f"{result}, {e}"
                     )
                     raise e
+            except TypeError:
+                logger.error(f"Unknown error format: {result}")
+                error_desc = "An unknown error has occurred."
 
         return f"{error}: {error_desc}" if error else error_desc
 
