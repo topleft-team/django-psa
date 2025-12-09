@@ -115,14 +115,23 @@ class APIClient:
         if response.status_code == 204:  # No content
             return None
         elif 200 <= response.status_code < 300:
-            try:
-                return response.json()
-            except JSONDecodeError as e:
-                logger.error(
-                    'Request failed during decoding JSON: GET {}: {}'
-                    .format(endpoint_url, e)
-                )
-                raise exc.APIError('JSONDecodeError: {}'.format(e))
+            # Check Content-Type to determine how to handle the response.
+            # Some APIs (e.g., Halo image attachments) return binary data
+            # instead of JSON.
+            content_type = response.headers.get('Content-Type', '').lower()
+            if 'application/json' in content_type or content_type == '':
+                try:
+                    return response.json()
+                except JSONDecodeError as e:
+                    logger.error(
+                        'Request failed during decoding JSON: GET {}: {}'
+                        .format(endpoint_url, e)
+                    )
+                    raise exc.APIError('JSONDecodeError: {}'.format(e))
+            else:
+                # Return the response object so caller can handle
+                # appropriately
+                return response
         elif response.status_code == 403:
             # TODO permissions exception from AT returns as 500, because
             #  it is terribly designed. Need to handle
