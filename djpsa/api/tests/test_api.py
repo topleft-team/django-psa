@@ -39,6 +39,7 @@ class TestAPIClient(unittest.TestCase):
         client = APIClient()
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.headers = {'Content-Type': 'application/json'}
         mock_response.json.return_value = {'key': 'value'}
         mock_request.return_value = mock_response
 
@@ -59,6 +60,7 @@ class TestAPIClient(unittest.TestCase):
         client = APIClient()
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.headers = {'Content-Type': 'application/json'}
         mock_response.json.side_effect = \
             JSONDecodeError('Expecting value', 'doc', 0)
         mock_request.return_value = mock_response
