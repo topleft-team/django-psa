@@ -36,14 +36,14 @@ class AttachmentAPI(HaloAPIClient):
             'data_base64': data_uri,
         }])
 
-    def download_from_url(self, url, attachment_id, filename, path):
+    def download_from_url(self, url, attachment_id, path):
         """
         Download attachment from CDN URL and save to disk.
         """
         response = requests.get(url)
         response.raise_for_status()
 
-        saved_filename = f'{attachment_id}-{filename}'
+        saved_filename = str(attachment_id)
         file_path = os.path.join(path, saved_filename)
 
         previous_umask = os.umask(FILE_UMASK)
