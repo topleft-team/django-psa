@@ -256,3 +256,12 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         keep_closed_days = djpsa_settings['keep_closed_days']
 
         return timezone.now() - timezone.timedelta(days=keep_closed_days)
+
+    def _convert_fields_to_api_format(self, data):
+        """Convert certain fields to the format expected by the Halo API."""
+        data = super()._convert_fields_to_api_format(data)
+
+        if 'agent_id' in data and data['agent_id'] is None:
+            data['agent_id'] = UNASSIGNED_AGENT_ID
+
+        return data
