@@ -321,8 +321,9 @@ class Synchronizer:
         Creates and returns an instance if it does not already exist.
         """
         result = None
+        instance_pk = api_instance[self.lookup_key]
+
         try:
-            instance_pk = api_instance[self.lookup_key]
             instance = self.model_class.objects.get(pk=instance_pk)
         except self.model_class.DoesNotExist:
             instance = self.model_class()
@@ -334,7 +335,24 @@ class Synchronizer:
             self._assign_field_data(instance, api_instance)
 
             if result == CREATED:
-                instance.save()
+                try:
+                    instance.save()
+                except IntegrityError as e:
+                    # Race condition: another process created this record
+                    # between our get() and save(). Re-fetch and update.
+                    try:
+                        instance = self.model_class.objects.get(
+                            pk=instance_pk)
+                    except self.model_class.DoesNotExist:
+                        # If bug described in #4412 still happens somehow,
+                        # re-raise so we know.
+                        raise e
+                    self._assign_field_data(instance, api_instance)
+                    if self._is_instance_changed(instance):
+                        instance.save()
+                        result = UPDATED
+                    else:
+                        result = SKIPPED
             elif self._is_instance_changed(instance):
                 instance.save()
                 result = UPDATED
