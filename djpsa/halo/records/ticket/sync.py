@@ -141,31 +141,15 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
 
         start_date = json_data.get('startdate')
         if start_date:
-            parsed_start_date = sync.empty_date_parser(start_date)
-
-            parsed_start_date = parsed_start_date.replace(
-                hour=parse(json_data.get('starttime')).hour,
-                minute=parse(json_data.get('starttime')).minute,
-                second=parse(json_data.get('starttime')).second
-            ) if parsed_start_date else None  # Don't set time if start
-            # date is an impossible date.
-
+            parsed_start_date = sync.parse_date_from_api(start_date)
             if parsed_start_date:
-                instance.start_date = parsed_start_date.date()
+                instance.start_date = parsed_start_date
 
         target_date = json_data.get('targetdate')
         if target_date:
-            parsed_target_date = sync.empty_date_parser(target_date)
-
-            parsed_target_date = parsed_target_date.replace(
-                hour=parse(json_data.get('targettime')).hour,
-                minute=parse(json_data.get('targettime')).minute,
-                second=parse(json_data.get('targettime')).second
-            ) if parsed_target_date else None  # Don't set time if target
-            # date is an impossible date.
-
+            parsed_target_date = sync.parse_date_from_api(target_date)
             if parsed_target_date:
-                instance.target_date = parsed_target_date.date()
+                instance.target_date = parsed_target_date
 
         last_incoming_email_date = json_data.get('lastincomingemaildate')
         if last_incoming_email_date:
@@ -256,6 +240,18 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         keep_closed_days = djpsa_settings['keep_closed_days']
 
         return timezone.now() - timezone.timedelta(days=keep_closed_days)
+
+    def _convert_fields(self, data):
+        """
+        Date fields (start_date, target_date) to Halo API format.
+        """
+        data = super()._convert_fields(data)
+
+        for field_name in ['start_date', 'target_date']:
+            if field_name in data and data[field_name] is not None:
+                data[field_name] = sync.format_date_for_api(data[field_name])
+
+        return data
 
     def _convert_fields_to_api_format(self, data):
         """Convert certain fields to the format expected by the Halo API."""
