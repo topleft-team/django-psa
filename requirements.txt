@@ -6,3 +6,4 @@ retrying
 django-model-utils==4.3.1
 redis==4.5.4
 build==1.2.2.post1
+django-extensions
