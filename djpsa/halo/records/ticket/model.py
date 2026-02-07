@@ -1,6 +1,7 @@
 from enum import Enum
 
 from django.db import models
+from django_extensions.db.models import TimeStampedModel
 from model_utils import FieldTracker
 
 
@@ -44,7 +45,7 @@ class ProjectOnlyManager(models.Manager):
         )
 
 
-class Ticket(models.Model):
+class Ticket(TimeStampedModel):
     summary = models.CharField(blank=True, null=True, max_length=255)
     details = models.TextField(
         blank=True, null=True
