@@ -37,6 +37,7 @@ setup(
         'python-dateutil',
         'retrying',
         'redis',
+        'django-extensions',
     ],
     test_suite='runtests.suite',
     tests_require=[
