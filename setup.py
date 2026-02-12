@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 LONG_DESCRIPTION = open('README.md').read()
 
-VERSION = (0, 18, '2a0')
+VERSION = (0, 21, '0a0')
 
 # pragma: no cover
 if VERSION[-1] != "final":
@@ -37,6 +37,7 @@ setup(
         'python-dateutil',
         'retrying',
         'redis',
+        'django-extensions',
     ],
     test_suite='runtests.suite',
     tests_require=[

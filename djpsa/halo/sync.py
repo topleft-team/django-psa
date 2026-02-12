@@ -1,4 +1,5 @@
 import logging
+from datetime import date, datetime, time
 
 from django.utils import timezone
 from dateutil.parser import parse
@@ -36,6 +37,48 @@ def empty_date_parser(date_time):
         except ValueError:
             date_time = parse(date_time)
         return date_time if date_time.year > 1980 else None
+
+
+def parse_date_from_api(date_time_str):
+    # Halo returns date fields as datetime strings (e.g."2026-02-10T00:00:00")
+    if not date_time_str:
+        return None
+
+    parsed_datetime = empty_date_parser(date_time_str)
+    if not parsed_datetime:
+        return None
+
+    # Ensure it's UTC-aware
+    if timezone.is_naive(parsed_datetime):
+        parsed_datetime = timezone.make_aware(parsed_datetime, timezone.utc)
+
+    # Extract the date portion
+    return parsed_datetime.date()
+
+
+def format_date_for_api(date_value):
+    # Halo API expects date fields as datetime strings
+    # without timezone indicators. We treat the date as
+    # 12 noon in the server's timezone, convert to UTC, and format
+    # as an ISO string without timezone information.
+    if not date_value:
+        return None
+
+    # Convert string to date if needed
+    if isinstance(date_value, str):
+        date_value = date.fromisoformat(date_value)
+
+    # Treat as 12 noon in the server's timezone
+    server_tz = timezone.get_current_timezone()
+
+    server_noon = timezone.make_aware(
+        datetime.combine(date_value, time(hour=12)),
+        server_tz
+    )
+
+    utc_noon = server_noon.astimezone(timezone.utc)
+    # Format as ISO string without timezone indicator
+    return utc_noon.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 class ResponseKeyMixin:
