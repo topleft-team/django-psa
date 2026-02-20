@@ -166,17 +166,12 @@ class HaloAPIClient(APIClient):
             error = result['error']
 
             if isinstance(error, str):
-                # If error is a string, we really have no good
-                # way of predicting what it's going to be. Log it,
-                # and return the string itself as the error.
+                # Error in some cases can just be a string.
                 error_msg = f"Error: {error}"
                 logger.error(error_msg)
                 return error_msg
 
             error_desc = error['error_description']
-        except TypeError:
-            logger.error(f"Unknown error format: {result}")
-            error_desc = "An unknown error has occurred."
 
         except KeyError:
             try:
