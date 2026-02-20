@@ -164,7 +164,15 @@ class HaloAPIClient(APIClient):
 
         try:
             error = result['error']
+
+            if isinstance(error, str):
+                # Error in some cases can just be a string.
+                error_msg = f"Error: {error}"
+                logger.error(error_msg)
+                return error_msg
+
             error_desc = error['error_description']
+
         except KeyError:
             try:
                 error = result['ClassName']
