@@ -10,6 +10,8 @@ from djpsa.utils import get_djpsa_settings
 
 logger = logging.getLogger(__name__)
 
+MASS_DELETE_PROTECTION_THRESHOLD = 0.9
+
 CREATED = 1
 UPDATED = 2
 SKIPPED = 3
@@ -96,6 +98,8 @@ class Synchronizer:
         self.partial_sync_support = True
         self.batch_size = self.sync_settings['batch_size']
         self.full = full
+        self.mass_delete_protection = self.sync_settings.get(
+            'mass_delete_protection', True)
 
     def get_sync_job_qset(self):
         return SyncJob.objects.filter(
@@ -393,6 +397,21 @@ class Synchronizer:
         prevent errors.
         """
         stale_ids = initial_ids - synced_ids
+
+        if stale_ids and self.full and self.mass_delete_protection:
+            total_count = len(initial_ids)
+            delete_count = len(stale_ids)
+            if total_count > 0 and delete_count / total_count > MASS_DELETE_PROTECTION_THRESHOLD:
+                logger.exception(
+                    'Mass delete protection: Aborting deletion of '
+                    '%s out of %s %s records during full sync '
+                    '(exceeds threshold of %s).',
+                    delete_count, total_count,
+                    self.get_model_name(),
+                    MASS_DELETE_PROTECTION_THRESHOLD
+                )
+                return 0
+
         deleted_count = 0
         if stale_ids:
             delete_qset = self.get_delete_qset(stale_ids)
