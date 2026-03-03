@@ -401,7 +401,8 @@ class Synchronizer:
         if stale_ids and self.full and self.mass_delete_protection:
             total_count = len(initial_ids)
             delete_count = len(stale_ids)
-            if total_count > 0 and delete_count / total_count > MASS_DELETE_PROTECTION_THRESHOLD:
+            if (total_count > 0 and delete_count / total_count >
+                    MASS_DELETE_PROTECTION_THRESHOLD):
                 logger.exception(
                     'Mass delete protection: Aborting deletion of '
                     '%s out of %s %s records during full sync '
