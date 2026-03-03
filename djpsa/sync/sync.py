@@ -396,7 +396,6 @@ class Synchronizer:
         If bulk_prune is set to False, delete records one by one to
         prevent errors.
         """
-        synced_ids = set()
         stale_ids = initial_ids - synced_ids
 
         if stale_ids and self.full and self.mass_delete_protection:
@@ -406,7 +405,7 @@ class Synchronizer:
                 logger.exception(
                     'Mass delete protection: Aborting deletion of '
                     '%s out of %s %s records during full sync '
-                    '(exceeds %s threshold).',
+                    '(exceeds threshold of %s).',
                     delete_count, total_count,
                     self.get_model_name(),
                     MASS_DELETE_PROTECTION_THRESHOLD
