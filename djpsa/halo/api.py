@@ -1,3 +1,4 @@
+import json
 import logging
 import requests
 import hashlib
@@ -155,7 +156,13 @@ class HaloAPIClient(APIClient):
         return response
 
     def _prepare_error_response(self, response):
-        result = response.json()
+        content = response.content.decode("utf-8")
+
+        try:
+            result = json.loads(content)
+        except (json.JSONDecodeError, ValueError):
+            return f'An error occurred: {response.status_code} {content}'
+
         error = ""
 
         if isinstance(result, str):
