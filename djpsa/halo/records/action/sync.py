@@ -28,10 +28,14 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
     def _get_real_action_id(self, action_record):
         """
         Extract the real action ID from the concatenated ID.
-        The Action model stores concatenated IDs (ticket_id + action_id) as the primary key
+        The Action model stores concatenated IDs
+        (ticket_id + action_id) as the primary key
         """
         concatenated_id = str(action_record.id)
-        ticket_id = str(action_record.ticket.id if action_record.ticket else action_record.project.id)
+        ticket_id = str(
+            action_record.ticket.id if action_record.ticket
+            else action_record.project.id
+        )
 
         if concatenated_id.startswith(ticket_id):
             real_action_id = concatenated_id[len(ticket_id):]
@@ -41,7 +45,8 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
 
     def update(self, record, data, *args, **kwargs):
         """
-        Override update to use the real action ID instead of the concatenated ID.
+        Override update to use the real action ID
+        instead of the concatenated ID.
         """
         real_action_id = self._get_real_action_id(record)
 
