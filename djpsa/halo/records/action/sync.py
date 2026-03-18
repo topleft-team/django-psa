@@ -25,6 +25,40 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         'charge_rate_id': (models.ChargeRate, 'chargerate'),
     }
 
+    def _get_real_action_id(self, action_record):
+        """
+        Extract the real action ID from the concatenated ID.
+        The Action model stores concatenated IDs
+        (ticket_id + action_id) as the primary key
+        """
+        concatenated_id = str(action_record.id)
+        ticket_id = str(
+            action_record.ticket.id if action_record.ticket
+            else action_record.project.id
+        )
+
+        if concatenated_id.startswith(ticket_id):
+            real_action_id = concatenated_id[len(ticket_id):]
+            return int(real_action_id)
+
+        return action_record.id
+
+    def update(self, record, data, *args, **kwargs):
+        """
+        Override update to use the real action ID
+        instead of the concatenated ID.
+        """
+        real_action_id = self._get_real_action_id(record)
+
+        data = self._convert_fields(data)
+        body = self._convert_fields_to_api_format(data)
+
+        body.update({'id': real_action_id})
+        response = self.client.update(real_action_id, body)
+
+        instance, _ = self.update_or_create_instance(response)
+        return instance
+
     def update_or_create_instance(self, json_data):
         # So far, action is the only model that has to be treated in this way,
         #  so rather than updating the lookup_key pattern to be more generic,
