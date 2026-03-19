@@ -10,6 +10,7 @@ from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
+from djpsa.halo.utils import parse_udf
 from djpsa.utils import get_djpsa_settings
 
 
@@ -46,6 +47,16 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         self.client.add_condition({
             'open_only': True,
         })
+
+        field_ids = list(
+            models.FieldInfoReference.objects.values_list(
+                'field_id', flat=True)
+        )
+        if field_ids:
+            self.client.add_condition({
+                'include_custom_fields':
+                    ','.join(str(fid) for fid in field_ids),
+            })
 
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get('id')
@@ -159,6 +170,9 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         team_name = json_data.get('team')
 
         instance.team = models.Team.objects.filter(name=team_name).first()
+
+        custom_fields = json_data.get('customfields', [])
+        instance.udf_data = parse_udf(custom_fields)
 
         self.set_relations(instance, json_data)
         if instance.agent_id == UNASSIGNED_AGENT_ID:

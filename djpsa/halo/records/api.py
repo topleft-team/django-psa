@@ -18,3 +18,4 @@ from djpsa.halo.records.budgetdata.api import BudgetDataAPI
 from djpsa.halo.records.outcome.api import OutcomeAPI
 from djpsa.halo.records.chargerate.api import ChargeRateAPI
 from djpsa.halo.records.timesheetevent.api import TimesheetEventAPI
+from djpsa.halo.records.fieldinfo.api import FieldInfoAPI

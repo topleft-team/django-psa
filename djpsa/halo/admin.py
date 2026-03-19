@@ -121,3 +121,9 @@ class BudgetTypeAdmin(admin.ModelAdmin):
 class BudgetDataAdmin(admin.ModelAdmin):
     list_display = ('id', 'budget_type', 'ticket')
     search_fields = ['id', 'budget_type__name', 'ticket__id']
+
+
+@admin.register(models.FieldInfoReference)
+class FieldInfoReferenceAdmin(admin.ModelAdmin):
+    list_display = ('field_id', 'name')
+    search_fields = ['field_id', 'name']
