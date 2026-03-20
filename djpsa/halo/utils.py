@@ -58,7 +58,6 @@ def parse_udf(custom_fields):
             'name': label,
             'value': value,
             'display_value': display_value,
-            'is_list': halo_type in (2, 3),  # Single or Multiple Selection
             'extra': {},
         }
     return result

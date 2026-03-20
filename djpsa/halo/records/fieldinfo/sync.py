@@ -81,7 +81,6 @@ class FieldInfoSynchronizer(sync.HaloSynchronizer):
                 'display': label,
                 'udf_type': UDF_TYPE_NAME_MAP.get(halo_type, str(halo_type)),
                 'data_type': DATA_TYPE_MAP.get(halo_type, 'string'),
-                'is_list': 'values' in api_data,
                 'extra': {},
             },
         )
