@@ -20,6 +20,7 @@ from djpsa.halo.records.budgetdata.sync import BudgetDataSynchronizer
 from djpsa.halo.records.outcome.sync import OutcomeSynchronizer
 from djpsa.halo.records.chargerate.sync import ChargeRateSynchronizer
 from djpsa.halo.records.timesheetevent.sync import TimeSheetEventSynchronizer
+from djpsa.halo.records.fieldinfo.sync import FieldInfoSynchronizer
 
 from djpsa.sync.grades import SyncGrades
 
@@ -57,6 +58,7 @@ class HaloSyncGrades(SyncGrades):
             TeamSynchronizer,
             BudgetTypeSynchronizer,
             BudgetDataSynchronizer,
+            FieldInfoSynchronizer,
         ]
 
 
@@ -77,4 +79,5 @@ sync_command_list = [
         ('team', (TeamSynchronizer, _('Team'))),
         ('budget_type', (BudgetTypeSynchronizer, _('BudgetType'))),
         ('budget_data', (BudgetDataSynchronizer, _('BudgetData'))),
+        ('field_info', (FieldInfoSynchronizer, _('FieldInfo'))),
     ]

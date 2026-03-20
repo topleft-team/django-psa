@@ -9,6 +9,7 @@ settings.configure(
     DEBUG=True,
     INSTALLED_APPS=(
         'djpsa.sync',
+        'djpsa.platform',
         'djpsa.halo',
     ),
 )
