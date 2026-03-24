@@ -5,8 +5,8 @@ from djpsa.halo import models
 from djpsa.halo.records.fieldinfo import api
 from djpsa.halo import sync
 from djpsa.sync.sync import SyncResults, log_sync_job
-from djpsa.platform.udf.utils import caption_to_snake_case
-from djpsa.halo.utils import DATA_TYPE_MAP, UDF_TYPE_NAME_MAP
+from djpsa.sync.udf.utils import caption_to_snake_case
+from djpsa.halo.utils import UDF_TYPE_MAP
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,10 @@ class FieldInfoSynchronizer(sync.HaloSynchronizer):
         For each FieldInfo reference, fetch the field definition
         from the Halo API and update_or_create the generic
         UDFDefinition.
+
+        We are unable to determine through the API which custom fields
+        are of interest to the user, so they will need to create a reference
+        for each field they want to sync.
         """
         results = SyncResults()
         client = self.client_class()
@@ -65,7 +69,7 @@ class FieldInfoSynchronizer(sync.HaloSynchronizer):
 
         halo_type = api_data.get('type')
 
-        if halo_type not in DATA_TYPE_MAP:
+        if halo_type not in UDF_TYPE_MAP:
             logger.info(
                 "Skipping unsupported UDF type %s for field %s.",
                 halo_type, label
@@ -74,13 +78,15 @@ class FieldInfoSynchronizer(sync.HaloSynchronizer):
             ref.save()
             return ''
 
+        data_type, type_name = UDF_TYPE_MAP[halo_type]
+
         _, created = models.UDFDefinition.objects.update_or_create(
             record_type='ticket',
             name=snake_name,
             defaults={
                 'display': label,
-                'udf_type': UDF_TYPE_NAME_MAP.get(halo_type, str(halo_type)),
-                'data_type': DATA_TYPE_MAP.get(halo_type, 'string'),
+                'udf_type': type_name,
+                'data_type': data_type,
                 'extra': {},
             },
         )
@@ -91,6 +97,50 @@ class FieldInfoSynchronizer(sync.HaloSynchronizer):
             results.updated_count += 1
 
         return snake_name
+
+    def fetch_sync_by_id(self, field_id):
+        """
+        Fetch and sync a single FieldInfo by its Halo field ID.
+        Creates or updates both the FieldInfoReference and
+        UDFDefinition. Raises ValueError if the type is unsupported
+        or the label can't be parsed.
+        """
+        client = self.client_class()
+        api_data = client.get_by_field_id(field_id)
+
+        ref, _ = models.FieldInfoReference.objects.get_or_create(
+            field_id=field_id,
+        )
+
+        label = api_data.get('label', '')
+        if label and ref.name != label:
+            ref.name = label
+            ref.save()
+
+        snake_name = caption_to_snake_case(label)
+        if not snake_name:
+            raise ValueError(
+                f"Could not parse field name from '{label}'."
+            )
+
+        halo_type = api_data.get('type')
+        if halo_type not in UDF_TYPE_MAP:
+            raise ValueError(
+                f"Unsupported custom field type for '{label}'."
+            )
+
+        data_type, type_name = UDF_TYPE_MAP[halo_type]
+        models.UDFDefinition.objects.update_or_create(
+            record_type='ticket',
+            name=snake_name,
+            defaults={
+                'display': label,
+                'udf_type': type_name,
+                'data_type': data_type,
+                'extra': {},
+            },
+        )
+        return ref
 
     def _format_job_condition(self, last_sync_time):
         return None

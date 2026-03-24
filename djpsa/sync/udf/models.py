@@ -27,4 +27,4 @@ class UDFDefinitionTracker(UDFDefinition):
 
     class Meta:
         proxy = True
-        db_table = 'platform_udfdefinition'
+        db_table = 'sync_udfdefinition'

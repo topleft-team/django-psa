@@ -3,6 +3,7 @@ import datetime
 from django.contrib import admin
 
 from djpsa.sync import models
+from djpsa.sync.udf.models import UDFDefinition
 
 
 @admin.register(models.SyncJob)
@@ -37,3 +38,10 @@ class SyncJobAdmin(admin.ModelAdmin):
             )
             return duration_seconds if duration_seconds else '0'
     duration_or_zero.short_description = 'Duration'
+
+
+@admin.register(UDFDefinition)
+class UDFDefinitionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display', 'record_type', 'udf_type', 'data_type')
+    search_fields = ['name', 'display']
+    list_filter = ('record_type', 'data_type')

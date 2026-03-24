@@ -30,7 +30,6 @@ settings.configure(
         # tests.
         'djpsa.sync.apps.SyncConfig',
         'djpsa.halo.apps.HaloConfig',
-        'djpsa.platform',
         'django.contrib.contenttypes',
         'django.contrib.auth',
         'django.contrib.sessions',
