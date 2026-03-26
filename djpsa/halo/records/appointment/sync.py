@@ -56,3 +56,7 @@ class AppointmentSynchronizer(sync.CreateMixin,
         instance.online_meeting_url = json_data.get('online_meeting_url')
 
         self.set_relations(instance, json_data)
+
+    def delete_entry(self, appointment_id: int):
+        self.delete(appointment_id)
+        self.model_class.objects.filter(pk=appointment_id).delete()
