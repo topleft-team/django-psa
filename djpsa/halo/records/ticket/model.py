@@ -1,5 +1,6 @@
 from enum import Enum
 
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from model_utils import FieldTracker
@@ -135,6 +136,7 @@ class Ticket(TimeStampedModel):
     )
 
     use = models.CharField(max_length=255, blank=True, null=True)
+    udf_data = models.JSONField(default=dict, blank=True)
 
     API_FIELDS = {
         "id": "id",
@@ -190,6 +192,9 @@ class Ticket(TimeStampedModel):
 
     class Meta:
         verbose_name_plural = "Tickets"
+        indexes = [
+            GinIndex(fields=['udf_data'], name='halo_ticket_udf_data_gin'),
+        ]
 
     def __str__(self):
         return str(self.summary)

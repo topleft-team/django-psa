@@ -1,6 +1,9 @@
 # This file is used to import all the models for the records module
 #  from a single location.
 
+from django.db import models
+from django_extensions.db.models import TimeStampedModel
+
 from djpsa.halo.records.ticket.model import Ticket, TicketTracker
 from djpsa.halo.records.priority.model import Priority, PriorityTracker
 from djpsa.halo.records.status.model import Status, StatusTracker
@@ -17,3 +20,16 @@ from djpsa.halo.records.budgettype.model import BudgetType, BudgetTypeTracker
 from djpsa.halo.records.budgetdata.model import BudgetData, BudgetDataTracker
 from djpsa.halo.records.outcome.model import Outcome, OutcomeTracker
 from djpsa.halo.records.chargerate.model import ChargeRate, ChargeRateTracker
+from djpsa.halo.records.fieldinfo.model import UDFDefinition, UDFDefinitionTracker
+
+
+class FieldInfoReference(TimeStampedModel):
+    field_id = models.IntegerField(unique=True)
+    name = models.CharField(max_length=255, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Field Info Reference'
+        verbose_name_plural = 'Field Info References'
+
+    def __str__(self):
+        return self.name or f"FieldInfo {self.field_id}"
