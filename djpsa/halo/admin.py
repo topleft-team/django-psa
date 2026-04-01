@@ -127,3 +127,10 @@ class BudgetDataAdmin(admin.ModelAdmin):
 class FieldInfoReferenceAdmin(admin.ModelAdmin):
     list_display = ('field_id', 'name')
     search_fields = ['field_id', 'name']
+
+
+@admin.register(models.CannedText)
+class CannedTextAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'team', 'agent')
+    search_fields = ['id', 'name', 'text']
+    list_filter = ('team', 'agent')
