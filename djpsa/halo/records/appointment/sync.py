@@ -36,6 +36,19 @@ class AppointmentSynchronizer(sync.CreateMixin,
             'hidecompleted': True,
         })
 
+    def update(self, record, data, *args, **kwargs):
+        previous_pk = record.pk
+        data = self._convert_fields(data)
+        body = self._convert_fields_to_api_format(data)
+
+        response = self.client.update(record.id, body)
+        new_pk = response.get(self.lookup_key)
+        if (new_pk != previous_pk):
+            self.model_class.objects.filter(pk=previous_pk).delete()
+
+        instance, _ = self.update_or_create_instance(response)
+        return instance
+
     def _assign_field_data(self, instance, json_data):
         instance.id = json_data.get('id')
         instance.subject = json_data.get('subject')
