@@ -293,7 +293,9 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             try:
                 asset_response = self.client.request(
                     'GET',
-                    endpoint_url=f'{self.client.resource_server}Asset/{asset_id}',
+                    endpoint_url=(
+                        f'{self.client.resource_server}Asset/{asset_id}'
+                    ),
                     params={'includedetails': 'true'},
                 )
             except APIError:
