@@ -10,6 +10,7 @@ from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
+from djpsa.api.exceptions import APIError
 from djpsa.halo.utils import parse_udf
 from djpsa.utils import get_djpsa_settings
 
@@ -275,3 +276,30 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             data['agent_id'] = UNASSIGNED_AGENT_ID
 
         return data
+
+    def fetch_ticket_assets(self, ticket_id):
+        response = self.client.request(
+            'GET',
+            endpoint_url=self.client._format_endpoint(ticket_id),
+        )
+
+        if not isinstance(response, dict):
+            return []
+
+        detailed_assets = []
+        for asset in response.get('assets', []):
+            asset_id = asset.get('id')
+
+            try:
+                asset_response = self.client.request(
+                    'GET',
+                    endpoint_url=f'{self.client.resource_server}Asset/{asset_id}',
+                    params={'includedetails': 'true'},
+                )
+            except APIError:
+                detailed_assets.append(asset)
+                continue
+
+            detailed_assets.append(asset_response)
+
+        return detailed_assets
