@@ -5,6 +5,7 @@ from dateutil.parser import parse
 
 from djpsa.halo import models
 from djpsa.halo.records import api
+from djpsa.halo.records.asset.sync import AssetSynchronizer
 from djpsa.halo import sync
 from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
@@ -287,16 +288,14 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             return []
 
         detailed_assets = []
+        asset_synchronizer = AssetSynchronizer()
         for asset in response.get('assets', []):
             asset_id = asset.get('id')
 
             try:
-                asset_response = self.client.request(
-                    'GET',
-                    endpoint_url=(
-                        f'{self.client.resource_server}Asset/{asset_id}'
-                    ),
-                    params={'includedetails': 'true'},
+                asset_response = asset_synchronizer.fetch_by_id(
+                    asset_id=asset_id,
+                    include_details=True,
                 )
             except APIError:
                 detailed_assets.append(asset)
