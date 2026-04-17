@@ -5,11 +5,13 @@ from dateutil.parser import parse
 
 from djpsa.halo import models
 from djpsa.halo.records import api
+from djpsa.halo.records.asset.sync import AssetSynchronizer
 from djpsa.halo import sync
 from djpsa.halo.records.action.sync import ActionSynchronizer
 from djpsa.halo.records.appointment.sync import AppointmentSynchronizer
 from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
+from djpsa.api.exceptions import APIError
 from djpsa.halo.utils import parse_udf
 from djpsa.utils import get_djpsa_settings
 
@@ -275,3 +277,30 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             data['agent_id'] = UNASSIGNED_AGENT_ID
 
         return data
+
+    def fetch_ticket_assets(self, ticket_id):
+        response = self.client.request(
+            'GET',
+            endpoint_url=self.client._format_endpoint(ticket_id),
+        )
+
+        if not isinstance(response, dict):
+            return []
+
+        detailed_assets = []
+        asset_synchronizer = AssetSynchronizer()
+        for asset in response.get('assets', []):
+            asset_id = asset.get('id')
+
+            try:
+                asset_response = asset_synchronizer.fetch_by_id(
+                    asset_id=asset_id,
+                    include_details=True,
+                )
+            except APIError:
+                detailed_assets.append(asset)
+                continue
+
+            detailed_assets.append(asset_response)
+
+        return detailed_assets
