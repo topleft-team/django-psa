@@ -18,3 +18,27 @@ class AssetSynchronizer:
             record_id=asset_id,
             include_details=include_details,
         )
+
+    def fetch_assets(
+            self,
+            client_id=None,
+            username=None,
+            search=None,
+            page=1,
+            page_size=50
+    ):
+        params = {
+            'pageinate': True,
+            'page_no': page,
+            'page_size': page_size,
+            'includechildren': True,
+        }
+        if client_id:
+            params['client_id'] = client_id
+        if username:
+            params['username'] = username
+        if search:
+            params['search'] = search
+
+        response = self.client.fetch_resource(params=params)
+        return response.get('assets', [])
