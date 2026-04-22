@@ -378,3 +378,24 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             record_id=ticket_id,
             data={'assets': list(by_id.values())},
         )
+
+    def detach_ticket_asset(self, ticket_id, asset_id):
+        response = self.client.request(
+            'GET',
+            endpoint_url=self.client._format_endpoint(ticket_id),
+        )
+
+        existing_assets = response.get('assets', [])
+        filtered_assets = [
+            {
+                'id': item.get('id'),
+                'inventory_number': item.get('inventory_number', ''),
+            }
+            for item in existing_assets
+            if item.get('id') and item.get('id') != asset_id
+        ]
+
+        self.client.update(
+            record_id=ticket_id,
+            data={'assets': filtered_assets},
+        )
