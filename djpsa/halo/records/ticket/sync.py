@@ -304,3 +304,77 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
             detailed_assets.append(asset_response)
 
         return detailed_assets
+
+    def fetch_ticket_asset_ids(self, ticket_id):
+        response = self.client.request(
+            'GET',
+            endpoint_url=self.client._format_endpoint(ticket_id),
+        )
+        if not isinstance(response, dict):
+            return set()
+
+        return {
+            asset.get('id')
+            for asset in response.get('assets', [])
+            if asset.get('id')
+        }
+
+    def fetch_available_assets(self, ticket, username=None, search=None,
+                               page=1, page_size=50):
+        asset_synchronizer = AssetSynchronizer()
+        assets = asset_synchronizer.fetch_assets(
+            client_id=ticket.client_id,
+            username=username,
+            search=search,
+            page=page,
+            page_size=page_size,
+        )
+
+        detailed_assets = []
+        for asset in assets:
+            asset_id = asset.get('id')
+            if not asset_id:
+                detailed_assets.append(asset)
+                continue
+            try:
+                detailed_assets.append(
+                    asset_synchronizer.fetch_by_id(
+                        asset_id=asset_id,
+                        include_details=True,
+                    )
+                )
+            except APIError:
+                detailed_assets.append(asset)
+        return detailed_assets
+
+    def attach_ticket_asset(self, ticket_id, asset_id, inventory_number=''):
+        response = self.client.request(
+            'GET',
+            endpoint_url=self.client._format_endpoint(ticket_id),
+        )
+
+        existing_assets = response.get('assets', [])
+
+        by_id = {}
+        for item in existing_assets:
+            item_id = item.get('id')
+            if not item_id:
+                continue
+
+            by_id[item_id] = {
+                'id': item_id,
+                'inventory_number': item.get('inventory_number', ''),
+            }
+
+        if asset_id not in by_id:
+            by_id[asset_id] = {
+                'id': asset_id,
+                'inventory_number': inventory_number,
+            }
+        else:
+            return
+
+        self.client.update(
+            record_id=ticket_id,
+            data={'assets': list(by_id.values())},
+        )
