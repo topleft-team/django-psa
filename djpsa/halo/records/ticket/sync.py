@@ -13,6 +13,7 @@ from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
 from djpsa.api.exceptions import APIError
 from djpsa.halo.utils import parse_udf
+from djpsa.halo.records.ticket.model import ItilRequestType
 from djpsa.utils import get_djpsa_settings
 
 
@@ -45,6 +46,10 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                  *args: Any,
                  **kwargs: Any):
         super().__init__(full, conditions, *args, **kwargs)
+
+        # Set during the closed-project-tasks pass in _post_sync_operations
+        # so _try_validate keeps every closed task regardless of age.
+        self._syncing_all_closed_tasks = False
 
         self.client.add_condition({
             'open_only': True,
@@ -200,6 +205,26 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
 
             results = self.fetch_records(results)
 
+            # Third pass: sync every closed *project task*, regardless of how
+            # long ago it was closed. The Project Health "Completion" signal
+            # counts closed/total child work items per project; with only the
+            # keep_closed_days window above, historically-closed tasks are
+            # missing from the denominator, so the signal skews red even when
+            # the work is largely done. Project tasks (itil_requesttype 23) are
+            # a small, bounded subset of all tickets, so syncing all of them is
+            # cheap. _syncing_all_closed_tasks lifts the keep_closed cutoff in
+            # _try_validate for this pass only.
+            self.client.remove_condition('lastupdatefromdate')
+            self.client.add_condition({
+                'itil_requesttype': ItilRequestType.TASKS.value,
+            })
+
+            self._syncing_all_closed_tasks = True
+            try:
+                results = self.fetch_records(results)
+            finally:
+                self._syncing_all_closed_tasks = False
+
         return results
 
     def get_related_synchronizers(self, instance):
@@ -229,6 +254,11 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         return sync_classes
 
     def _try_validate(self, record):
+        # During the closed-project-tasks pass keep every closed task
+        # regardless of age, so the Completion denominator is complete.
+        if self._syncing_all_closed_tasks:
+            return True
+
         # Prevents closed tickets that were updated from re-syncing
         # every time there is an update to them.
 
