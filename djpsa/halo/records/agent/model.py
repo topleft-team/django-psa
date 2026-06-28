@@ -10,6 +10,11 @@ class Agent(models.Model):
     firstname = models.CharField(max_length=255, blank=True, null=True)
     surname = models.CharField(max_length=255, blank=True, null=True)
     colour = models.CharField(max_length=255, blank=True, null=True)
+    # Agent's internal hourly cost rate (Halo `costprice`), used to cost labour
+    # (action hours x cost_price) for project margin. Only returned by the API
+    # when the integration role has cost visibility.
+    cost_price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True)
     teams = models.ManyToManyField('Team', related_name='agents', blank=True)
 
     class Meta:
