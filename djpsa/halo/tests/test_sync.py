@@ -47,8 +47,8 @@ class TestResponseKeyMixin(TestCase):
 
 
 class TestTicketSynchronizerClosedTasks(TestCase):
-    """The Halo sync must include closed project tasks regardless of age, so
-    the Project Health Completion denominator is complete."""
+    """The Halo sync must include an open project's closed tasks regardless of
+    age, so its closed/total child counts stay accurate for consumers."""
 
     def _make_sync(self, full=True):
         # Avoid hitting the real Halo API or the DB during construction.
@@ -75,7 +75,7 @@ class TestTicketSynchronizerClosedTasks(TestCase):
         sync._syncing_all_closed_tasks = True
         self.assertTrue(sync._try_validate(record))
 
-    def test_post_sync_operations_syncs_all_closed_project_tasks(self):
+    def test_post_sync_operations_syncs_open_projects_closed_tasks(self):
         sync = self._make_sync(full=True)
 
         # Record the flag's value at each fetch so we can prove the cutoff is
@@ -86,18 +86,33 @@ class TestTicketSynchronizerClosedTasks(TestCase):
             flag_states.append(sync._syncing_all_closed_tasks)
             return results
 
-        with patch.object(sync, 'fetch_records', side_effect=record_fetch):
+        with patch(
+                'djpsa.halo.records.ticket.sync.models.Ticket'
+        ) as ticket_model, \
+                patch.object(sync, 'fetch_records', side_effect=record_fetch):
+            ticket_model.projects_only.filter.return_value \
+                .values_list.return_value = [101, 202]
             sync._post_sync_operations(MagicMock())
 
-        # Two extra passes on a full sync: recently-closed (any type), then
-        # all closed project tasks.
-        self.assertEqual(flag_states, [False, True])
+        # Only open projects drive the closed-tasks pass.
+        ticket_model.projects_only.filter.assert_called_once_with(
+            date_closed__isnull=True)
+
+        # One recently-closed pass (any type, cutoff on), then one pass per
+        # open project (cutoff lifted).
+        self.assertEqual(flag_states, [False, True, True])
 
         # The closed-project-tasks pass scopes to project tasks and drops the
         # keep_closed_days window.
         sync.client.add_condition.assert_any_call(
             {'itil_requesttype': ItilRequestType.TASKS.value})
         sync.client.remove_condition.assert_any_call('lastupdatefromdate')
+
+        # Each open project is fetched by its own parent_id, then cleared so
+        # the ids don't accumulate across iterations.
+        sync.client.add_condition.assert_any_call({'parent_id': 101})
+        sync.client.add_condition.assert_any_call({'parent_id': 202})
+        sync.client.remove_condition.assert_any_call('parent_id')
 
         # The flag is reset once the pass completes.
         self.assertFalse(sync._syncing_all_closed_tasks)
