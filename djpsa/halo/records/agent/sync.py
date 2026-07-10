@@ -23,6 +23,10 @@ class AgentSynchronizer(sync.ResponseKeyMixin,
             'includeenabled': True,
             'includedisabled': True,
             'includeunassigned': False,
+            # Needed for the `costprice` field (agent cost rate): Halo only
+            # returns it in the detailed payload, and only when the integration
+            # role has cost visibility (otherwise it stays None).
+            'includedetails': True,
         })
 
     def _assign_field_data(self, instance, json_data):
@@ -35,6 +39,7 @@ class AgentSynchronizer(sync.ResponseKeyMixin,
         instance.firstname = json_data.get('firstname')
         instance.surname = json_data.get('surname')
         instance.colour = json_data.get('colour')
+        instance.cost_price = json_data.get('costprice')
 
         teams = json_data.get('teams')
         if teams and instance.tracker.previous('id') is not None:

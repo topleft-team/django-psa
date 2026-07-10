@@ -1,10 +1,12 @@
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 from django.utils import timezone
 from dateutil.parser import parse
 from djpsa.halo.sync import empty_date_parser, ResponseKeyMixin
+from djpsa.halo import models
 from djpsa.halo.records.ticket.sync import TicketSynchronizer
 from djpsa.halo.records.ticket.model import ItilRequestType
+from djpsa.halo.records.agent.sync import AgentSynchronizer
 
 
 class TestEmptyDateParser(TestCase):
@@ -126,3 +128,29 @@ class TestTicketSynchronizerClosedTasks(TestCase):
         # Partial syncs keep open_only and do no closed passes.
         fetch_records.assert_not_called()
         self.assertFalse(sync._syncing_all_closed_tasks)
+
+
+class TestAgentSynchronizer(TestCase):
+    """The agent cost rate (Halo `costprice`) feeds project-margin costing."""
+
+    def _synchronizer(self):
+        # Stub the API client so construction needs no Halo credentials.
+        with mock.patch.object(AgentSynchronizer, 'client_class'):
+            return AgentSynchronizer()
+
+    def test_assigns_cost_price_from_costprice(self):
+        instance = models.Agent()
+        self._synchronizer()._assign_field_data(instance, {
+            'id': 6, 'name': 'Amir Said', 'costprice': 30.0,
+        })
+        self.assertEqual(instance.id, 6)
+        self.assertEqual(instance.name, 'Amir Said')
+        self.assertEqual(instance.cost_price, 30.0)
+
+    def test_cost_price_absent_stays_none(self):
+        # No cost visibility on the API role -> field omitted -> stays None.
+        instance = models.Agent()
+        self._synchronizer()._assign_field_data(instance, {
+            'id': 7, 'name': 'No Cost',
+        })
+        self.assertIsNone(instance.cost_price)
