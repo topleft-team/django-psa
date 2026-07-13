@@ -13,6 +13,7 @@ from djpsa.halo.records.agent.api import UNASSIGNED_AGENT_ID
 from djpsa.halo.records.client.api import UNASSIGNED_CLIENT_ID
 from djpsa.api.exceptions import APIError
 from djpsa.halo.utils import parse_udf
+from djpsa.halo.records.ticket.model import ItilRequestType
 from djpsa.utils import get_djpsa_settings
 
 
@@ -45,6 +46,10 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
                  *args: Any,
                  **kwargs: Any):
         super().__init__(full, conditions, *args, **kwargs)
+
+        # Set during the closed-project-tasks pass in _post_sync_operations
+        # so _try_validate keeps a project's closed tasks regardless of age.
+        self._syncing_all_closed_tasks = False
 
         self.client.add_condition({
             'open_only': True,
@@ -200,6 +205,36 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
 
             results = self.fetch_records(results)
 
+            # Third pass: sync a project's closed tasks regardless of how long
+            # ago they closed, so each project's closed/total child counts stay
+            # accurate for consumers. The keep_closed_days window above drops
+            # tasks that closed longer ago than the cutoff, which throws those
+            # counts off. Fetching every closed task ever is unbounded and
+            # grows without limit, so scope to the *open* projects already
+            # stored locally and pull each one's closed tasks by parent_id.
+            # (Closed projects are left out for now; their child counts stop
+            # changing once the project itself is done.) Halo's parent_id
+            # filter takes a single id with no batching, so this is one request
+            # per open project. _syncing_all_closed_tasks lifts the keep_closed
+            # cutoff in _try_validate for this pass only.
+            self.client.remove_condition('lastupdatefromdate')
+            self.client.add_condition({
+                'itil_requesttype': ItilRequestType.TASKS.value,
+            })
+
+            self._syncing_all_closed_tasks = True
+            try:
+                open_project_ids = models.Ticket.projects_only \
+                    .filter(date_closed__isnull=True) \
+                    .values_list('id', flat=True)
+                for project_id in open_project_ids:
+                    self.client.add_condition({'parent_id': project_id})
+                    results = self.fetch_records(results)
+                    self.client.remove_condition('parent_id')
+            finally:
+                self._syncing_all_closed_tasks = False
+                self.client.remove_condition('parent_id')
+
         return results
 
     def get_related_synchronizers(self, instance):
@@ -229,6 +264,11 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         return sync_classes
 
     def _try_validate(self, record):
+        # During the closed-project-tasks pass keep the project's closed tasks
+        # regardless of age, so its closed/total child counts stay complete.
+        if self._syncing_all_closed_tasks:
+            return True
+
         # Prevents closed tickets that were updated from re-syncing
         # every time there is an update to them.
 
