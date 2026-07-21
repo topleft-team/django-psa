@@ -1,37 +1,56 @@
+class SyncGrade:
+    description = ""
+    synchronizers = []
+    schedule = ""  # For app to describe the frequency of use. (ie "Every 5 minutes.")
+
+    def __init__(self, description=None, synchronizers=None):
+        self.description = description
+        self.synchronizers = synchronizers if synchronizers is not None else []
+
 class SyncGrades:
     """
     Define grades of synchronizers.
 
-    The result of operational+configuration+slow grades should be all the
-    synchronizers.
+    The result of operational+configuration+slow grades+ludicrous slow
+    should be all the synchronizers.
     """
-    def partial_grades(self):
-        """
-        Return a list of synchronizers for resources that support partial syncs
-        and that are useful to keep up-to-date at a high frequency.
-        """
-        return []
+    def __init__(self, *args, **kwargs):
+        self.filter_cb = kwargs.pop('filter_cb', None)
+        self.grades = {
+            'partial': SyncGrade(
+                """Resources that are useful to keep up-to-date at high 
+                   frequency and can be retrieved by limiting to those which have changed recently.""",
+                []
+            ),
+            # Synchronizers for resources that change throughout a typical day. For example,
+            # tickets, service calls, notes, etc.
+            # Exclude resources that can potentially take a very long time to sync.
+            'operational': SyncGrade(
+                """Resources that change throughout a day.""",
+                []
+            ),
+            # Synchronizers for resources that change infrequently- such as on a weekly or
+            # monthly basis. For example, ticket types, statuses, priorities, etc.
+            'configuration': SyncGrade(
+                """Resources that change infrequently.""",
+                []
+            ),
+            # Synchronizers for resources that can potentially take a very long
+            # time to sync. For example, notes, time entries, etc.
+            'slow': SyncGrade(
+                """Resources that can take a long time to retrieve.""",
+                []
+            ),
+            # Synchronizers for resources that can take an unbelievable amount of time to sync,
+            # so much it makes you cry.
+            'ludicrous_slow': SyncGrade(
+                """Resources that can take an unbelievable amount of time to retrieve.""",
+                []
+            ),
+        }
 
-    def operational_grades(self):
-        """
-        Return a list of synchronizers for resources that change throughout a
-        typical day. For example, tickets, service calls, notes, etc.
-
-        Exclude resources that can potentially take a very long time to sync.
-        """
-        return []
-
-    def configuration_grades(self):
-        """
-        Return a list of synchronizers for resources that change infrequently-
-        such as on a weekly or monthly basis. For example, ticket types,
-        statuses, priorities, etc.
-        """
-        return []
-
-    def slow_grades(self):
-        """
-        Return a list of synchronizers for resources that can potentially take
-        a very long time to sync. For example, notes, time entries, etc.
-        """
-        return []
+    def get_grade(self, grade_key):
+        grade = self.grades.get(grade_key)
+        if grade and self.filter_cb:
+            grade = self.filter_cb(grade)
+        return grade

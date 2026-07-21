@@ -27,13 +27,12 @@ from djpsa.sync.grades import SyncGrades
 
 
 class HaloSyncGrades(SyncGrades):
-    def partial_grades(self):
-        return [
+    def __init__(self, *args, **kwargs):
+        super(HaloSyncGrades, self).__init__(*args, **kwargs)
+        self.grades['partial'].synchronizers = [
             TicketSynchronizer,
         ]
-
-    def operational_grades(self):
-        return [
+        self.grades['operational'].synchronizers = [
             HaloUserSynchronizer,
             AgentSynchronizer,
             ClientSynchronizer,
@@ -41,14 +40,7 @@ class HaloSyncGrades(SyncGrades):
             AppointmentSynchronizer,
             ActionSynchronizer,
         ]
-
-    def configuration_grades(self):
-        """
-        Return a list of synchronizers for resources that change infrequently-
-        such as on a weekly or monthly basis. For example, ticket types, statuses,
-        priorities, etc.
-        """
-        return [
+        self.grades['configuration'].synchronizers = [
             SLASynchronizer,
             StatusSynchronizer,
             SiteSynchronizer,
