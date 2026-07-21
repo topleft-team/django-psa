@@ -1,11 +1,13 @@
 class SyncGrade:
     description = ""
     synchronizers = []
-    schedule = ""  # For app to describe the frequency of use. (ie "Every 5 minutes.")
+    # For app to describe the frequency of use. (ie "Every 5 minutes.")
+    schedule = ""
 
     def __init__(self, description=None, synchronizers=None):
         self.description = description
         self.synchronizers = synchronizers if synchronizers is not None else []
+
 
 class SyncGrades:
     """
@@ -18,19 +20,22 @@ class SyncGrades:
         self.filter_cb = kwargs.pop('filter_cb', None)
         self.grades = {
             'partial': SyncGrade(
-                """Resources that are useful to keep up-to-date at high 
-                   frequency and can be retrieved by limiting to those which have changed recently.""",
+                """Resources that are useful to keep up-to-date at high
+                   frequency and can be retrieved by limiting to those which
+                   have changed recently.""",
                 []
             ),
-            # Synchronizers for resources that change throughout a typical day. For example,
-            # tickets, service calls, notes, etc.
-            # Exclude resources that can potentially take a very long time to sync.
+            # Synchronizers for resources that change throughout a typical
+            # day. For example, tickets, service calls, notes, etc.
+            # Exclude resources that can potentially take a very long time to
+            # sync.
             'operational': SyncGrade(
                 """Resources that change throughout a day.""",
                 []
             ),
-            # Synchronizers for resources that change infrequently- such as on a weekly or
-            # monthly basis. For example, ticket types, statuses, priorities, etc.
+            # Synchronizers for resources that change infrequently- such as
+            # on a weekly or monthly basis. For example, ticket types,
+            # statuses, priorities, etc.
             'configuration': SyncGrade(
                 """Resources that change infrequently.""",
                 []
@@ -41,10 +46,11 @@ class SyncGrades:
                 """Resources that can take a long time to retrieve.""",
                 []
             ),
-            # Synchronizers for resources that can take an unbelievable amount of time to sync,
-            # so much it makes you cry.
+            # Synchronizers for resources that can take an unbelievable
+            # amount of time to sync, so much it makes you cry.
             'ludicrous_slow': SyncGrade(
-                """Resources that can take an unbelievable amount of time to retrieve.""",
+                """Resources that can take an unbelievable amount of time
+                   to retrieve.""",
                 []
             ),
         }
