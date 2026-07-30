@@ -37,6 +37,13 @@ jobs:
       - name: Create source distribution
         run: |
           python3 -m build
+      - name: Check distribution metadata
+        # Fail here rather than at the upload step. Keep this twine pin in
+        # sync with the one shipped by the publish action below, so the
+        # metadata is validated by the same version that will upload it.
+        run: |
+          pip install --upgrade twine==7.0.0
+          twine check --strict dist/*
       - name: Publish package
         # v1.14.2, which ships twine 7.0.0. Keep this recent: the previous
         # pin shipped twine 5.x, which cannot read the Metadata-Version 2.4
