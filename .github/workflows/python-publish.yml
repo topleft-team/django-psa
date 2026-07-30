@@ -38,7 +38,11 @@ jobs:
         run: |
           python3 -m build
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
+        # v1.14.2, which ships twine 7.0.0. Keep this recent: the previous
+        # pin shipped twine 5.x, which cannot read the Metadata-Version 2.4
+        # that current setuptools emits and rejects the dist claiming its
+        # Name and Version are missing.
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
