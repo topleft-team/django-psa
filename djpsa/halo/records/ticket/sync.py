@@ -1,3 +1,4 @@
+from datetime import UTC
 from typing import Any, List
 
 from django.utils import timezone
@@ -72,7 +73,7 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
 
         try:
             instance.last_action_date = timezone.make_aware(
-                parse(json_data.get('lastactiondate')), timezone.utc)
+                parse(json_data.get('lastactiondate')), UTC)
         except ValueError:
             instance.last_action_date = parse(json_data.get('lastactiondate'))
 
@@ -84,7 +85,7 @@ class TicketSynchronizer(sync.ResponseKeyMixin,
         if last_update:
             try:
                 instance.last_update = timezone.make_aware(
-                    parse(last_update), timezone.utc)
+                    parse(last_update), UTC)
             except ValueError:
                 instance.last_update = parse(last_update)
 

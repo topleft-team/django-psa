@@ -1,3 +1,4 @@
+from datetime import UTC
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 from django.utils import timezone
@@ -13,7 +14,7 @@ class TestEmptyDateParser(TestCase):
 
     def test_valid_date(self):
         date_str = "2023-10-10T10:00:00"
-        expected_date = timezone.make_aware(parse(date_str), timezone.utc)
+        expected_date = timezone.make_aware(parse(date_str), UTC)
         self.assertEqual(empty_date_parser(date_str), expected_date)
 
     def test_empty_date(self):
@@ -29,7 +30,7 @@ class TestEmptyDateParser(TestCase):
 
     def test_above_edge_case_date(self):
         date_str = "1981-01-01T00:00:00"
-        expected_date = timezone.make_aware(parse(date_str), timezone.utc)
+        expected_date = timezone.make_aware(parse(date_str), UTC)
         self.assertEqual(empty_date_parser(date_str), expected_date)
 
 

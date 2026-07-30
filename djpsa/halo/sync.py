@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, time
+from datetime import UTC, date, datetime, time
 
 from django.utils import timezone
 from dateutil.parser import parse
@@ -33,7 +33,7 @@ def empty_date_parser(date_time):
     # Set to 1980 in case they also do 1950 or something and I haven't seen it.
     if date_time:
         try:
-            date_time = timezone.make_aware(parse(date_time), timezone.utc)
+            date_time = timezone.make_aware(parse(date_time), UTC)
         except ValueError:
             date_time = parse(date_time)
         return date_time if date_time.year > 1980 else None
@@ -50,7 +50,7 @@ def parse_date_from_api(date_time_str):
 
     # Ensure it's UTC-aware
     if timezone.is_naive(parsed_datetime):
-        parsed_datetime = timezone.make_aware(parsed_datetime, timezone.utc)
+        parsed_datetime = timezone.make_aware(parsed_datetime, UTC)
 
     # Extract the date portion
     return parsed_datetime.date()
@@ -76,7 +76,7 @@ def format_date_for_api(date_value):
         server_tz
     )
 
-    utc_noon = server_noon.astimezone(timezone.utc)
+    utc_noon = server_noon.astimezone(UTC)
     # Format as ISO string without timezone indicator
     return utc_noon.strftime('%Y-%m-%dT%H:%M:%S')
 
