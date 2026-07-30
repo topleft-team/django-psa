@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 LONG_DESCRIPTION = open('README.md').read()
 
-VERSION = (0, 34, '0')
+VERSION = (0, 35, '0')
 
 # pragma: no cover
 if VERSION[-1] != "final":
@@ -30,28 +30,17 @@ setup(
     url="https://github.com/topleft-team/django-psa",
     include_package_data=True,
     license='MIT',
+    python_requires='>=3.12',
     install_requires=[
         'requests',
-        'django',
+        'django>=4.2,<7.0',
         'setuptools',
         'python-dateutil',
         'retrying',
         'redis',
         'django-extensions',
-    ],
-    test_suite='runtests.suite',
-    tests_require=[
-        'names',
-        'coverage',
-        'flake8',
-        'django-test-plus',
-        'mock',
-        'freezegun',
-        'responses',
-        'model-mommy',
-        'django-coverage',
-        'names',
-        'django-environ'
+        'django-model-utils',
+        'django-braces',
     ],
     # Django likes to inspect apps for /migrations directories, and can't if
     # package is installed as an egg. zip_safe=False disables installation as
@@ -60,11 +49,16 @@ setup(
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
+        'Framework :: Django :: 4.2',
+        'Framework :: Django :: 5.2',
+        'Framework :: Django :: 6.0',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Programming Language :: Python :: 3.14',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Development Status :: 3 - Alpha',

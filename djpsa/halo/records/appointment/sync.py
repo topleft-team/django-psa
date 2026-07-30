@@ -1,3 +1,4 @@
+from datetime import UTC
 from typing import Any, List
 from django.utils import timezone
 from dateutil.parser import parse
@@ -54,12 +55,12 @@ class AppointmentSynchronizer(sync.CreateMixin,
         instance.subject = json_data.get('subject')
         start_date = json_data.get('start_date')
         instance.start_date = timezone.make_aware(
-            parse(start_date), timezone.utc
+            parse(start_date), UTC
         ) if start_date else None
 
         end_date = json_data.get('end_date')
         instance.end_date = timezone.make_aware(
-            parse(end_date), timezone.utc
+            parse(end_date), UTC
         ) if end_date else None
         instance.appointment_type = json_data.get('appointment_type_name')
         instance.is_private = json_data.get('is_private')
