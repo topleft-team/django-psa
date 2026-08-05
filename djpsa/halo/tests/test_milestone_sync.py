@@ -188,11 +188,10 @@ class MilestoneSynchronizerTestCase(TestCase):
         client._format_endpoint.return_value = 'https://halo/api/Tickets/500'
         return client
 
-    def test_update_dependency_posts_the_whole_milestone_list(self):
+    def test_update_dependencies_posts_the_whole_milestone_list(self):
         """Halo treats the list as a full replacement, so every milestone must
         go back — dropping one would delete it."""
         sync = self._synchronizer()
-        build = self._milestone(2, sequence=2, name='Build')
         remote = [
             milestone_payload(1, 500, name='Plan', sequence=1),
             milestone_payload(2, 500, name='Build', sequence=2),
@@ -202,7 +201,7 @@ class MilestoneSynchronizerTestCase(TestCase):
         with mock.patch(
                 'djpsa.halo.records.milestone.sync.api.TicketAPI',
                 return_value=client):
-            sync.update_dependency(build, 1)
+            sync.update_dependencies(500, {2: 1})
 
         client.update.assert_called_once()
         project_id, data = client.update.call_args[0]
@@ -216,9 +215,29 @@ class MilestoneSynchronizerTestCase(TestCase):
         self.assertEqual(sent[0]['name'], 'Plan')
         self.assertEqual(sent[1]['tickets'], remote[1]['tickets'])
 
-    def test_update_dependency_clears_with_none(self):
+    def test_update_dependencies_applies_every_edge_in_one_request(self):
+        """A set of edits lands together or not at all — one POST, so Halo
+        can't end up with half the graph."""
         sync = self._synchronizer()
-        build = self._milestone(2, sequence=2, name='Build')
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1),
+            milestone_payload(2, 500, name='Build', sequence=2),
+            milestone_payload(3, 500, name='Verify', sequence=3,
+                              dependencies=(2,)),
+        ])
+
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            sync.update_dependencies(500, {2: 1, 3: None})
+
+        client.update.assert_called_once()
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual(sent[1]['milestone_dependencies'], [{'id': 1}])
+        self.assertEqual(sent[2]['milestone_dependencies'], [])
+
+    def test_update_dependencies_clears_with_none(self):
+        sync = self._synchronizer()
         client = self._patched_ticket_api([
             milestone_payload(2, 500, name='Build', sequence=2,
                               dependencies=(1,)),
@@ -227,37 +246,49 @@ class MilestoneSynchronizerTestCase(TestCase):
         with mock.patch(
                 'djpsa.halo.records.milestone.sync.api.TicketAPI',
                 return_value=client):
-            sync.update_dependency(build, None)
+            sync.update_dependencies(500, {2: None})
 
         sent = client.update.call_args[0][1]['milestones']
         self.assertEqual(sent[0]['milestone_dependencies'], [])
 
-    def test_update_dependency_refuses_when_the_milestone_is_gone(self):
-        """Posting the list we just read would delete the milestones Halo
-        still has, so bail out instead."""
+    def test_update_dependencies_is_a_no_op_when_empty(self):
         sync = self._synchronizer()
-        build = self._milestone(2, sequence=2, name='Build')
+        client = self._patched_ticket_api([])
+
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            sync.update_dependencies(500, {})
+
+        client.request.assert_not_called()
+        client.update.assert_not_called()
+
+    def test_update_dependencies_refuses_when_a_milestone_is_gone(self):
+        """Posting the list we just read would delete the milestones Halo
+        still has, so bail out instead — including when only one of several
+        targets has vanished."""
+        sync = self._synchronizer()
         client = self._patched_ticket_api([
             milestone_payload(1, 500, name='Plan', sequence=1),
+            milestone_payload(2, 500, name='Build', sequence=2),
         ])
 
         with mock.patch(
                 'djpsa.halo.records.milestone.sync.api.TicketAPI',
                 return_value=client):
             with self.assertRaises(InvalidObjectException):
-                sync.update_dependency(build, 1)
+                sync.update_dependencies(500, {2: 1, 99: 1})
 
         client.update.assert_not_called()
 
-    def test_update_dependency_refuses_when_halo_returns_no_milestones(self):
+    def test_update_dependencies_refuses_when_halo_returns_no_milestones(self):
         sync = self._synchronizer()
-        build = self._milestone(2, sequence=2, name='Build')
         client = self._patched_ticket_api([])
 
         with mock.patch(
                 'djpsa.halo.records.milestone.sync.api.TicketAPI',
                 return_value=client):
             with self.assertRaises(InvalidObjectException):
-                sync.update_dependency(build, 1)
+                sync.update_dependencies(500, {2: 1})
 
         client.update.assert_not_called()

@@ -133,42 +133,49 @@ class MilestoneSynchronizer(sync.ResponseKeyMixin, sync.HaloSynchronizer):
             ignore_conflicts=True,
         )
 
-    def update_dependency(self, milestone, parent_milestone_id):
+    def update_dependencies(self, project_id, dependencies):
         """
-        Set (or clear, with ``parent_milestone_id=None``) the milestone this
-        one depends on, in Halo.
+        Set the milestone each of a project's milestones depends on, in Halo.
+
+        ``dependencies`` maps child milestone id -> parent milestone id, with
+        ``None`` to clear. The whole mapping is applied in one request, so a
+        set of edits either all land in Halo or none do.
 
         Halo has no writable milestone endpoint: the only way in is to POST the
         project ticket with its **whole** ``milestones`` array, which it treats
         as a full replacement — anything left out is deleted, and a field left
         off a milestone that is included gets blanked. So this re-reads the
         array from Halo and posts back exactly what it returned, touching only
-        the one milestone's ``milestone_dependencies``. Rebuilding the array
+        the named milestones' ``milestone_dependencies``. Rebuilding the array
         from local rows instead would silently discard whatever changed in Halo
         since the last sync.
         """
+        if not dependencies:
+            return
+
         client = api.TicketAPI()
-        project_id = milestone.ticket_id
 
         detail = client.request(
             'GET', endpoint_url=client._format_endpoint(project_id))
         remote = detail.get('milestones') or []
 
-        if not any(row.get('id') == milestone.id for row in remote):
+        remote_ids = {row.get('id') for row in remote}
+        missing = set(dependencies) - remote_ids
+        if missing:
             # Posting the array now would delete the milestones Halo does have.
             raise InvalidObjectException(
-                'Milestone {} is no longer on project {} in HaloPSA; '
+                'Milestone(s) {} are no longer on project {} in HaloPSA; '
                 'refusing to write the milestone list.'.format(
-                    milestone.id, project_id))
+                    sorted(missing), project_id))
 
         for row in remote:
-            if row.get('id') == milestone.id:
+            if row.get('id') in dependencies:
+                parent_id = dependencies[row['id']]
                 row['milestone_dependencies'] = (
-                    [{'id': parent_milestone_id}] if parent_milestone_id
-                    else []
+                    [{'id': parent_id}] if parent_id else []
                 )
 
         client.update(project_id, {'milestones': remote})
         logger.info(
-            'Set milestone %s dependency to %s on project %s',
-            milestone.id, parent_milestone_id, project_id)
+            'Set milestone dependencies %s on project %s',
+            dependencies, project_id)
