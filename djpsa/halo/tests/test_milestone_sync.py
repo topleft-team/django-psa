@@ -1,0 +1,263 @@
+from unittest import mock
+
+from django.test import TestCase
+
+from djpsa.halo import models
+from djpsa.halo.records.milestone.sync import MilestoneSynchronizer
+from djpsa.halo.records.ticket.model import ItilRequestType
+from djpsa.sync.sync import InvalidObjectException
+
+PROJECT = ItilRequestType.PROJECTS.value
+
+
+def milestone_payload(milestone_id, project_id, name='Plan', sequence=1,
+                      tickets=(), dependencies=()):
+    """One row as the Halo Milestone endpoint returns it."""
+    return {
+        'id': milestone_id,
+        'ticket_id': project_id,
+        'name': name,
+        'sequence': sequence,
+        'state': 2,
+        'start_date': '2026-03-01T09:00:00',
+        'target_date': '2026-03-31T17:00:00',
+        'milestone_dependencies': [{'id': p} for p in dependencies],
+        'dependencies': [
+            {'id': 100 + i, 'child': milestone_id, 'parent': parent}
+            for i, parent in enumerate(dependencies)
+        ],
+        'tickets': [
+            {'id': 200 + i, 'milestone_id': milestone_id, 'ticket_id': t,
+             'ticket_name': str(t)}
+            for i, t in enumerate(tickets)
+        ],
+    }
+
+
+class MilestoneSynchronizerTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.status = models.Status.objects.create(id=1, name='In Progress')
+        self.project = models.Ticket.objects.create(
+            id=500, summary='Migration', status=self.status,
+            itil_request_type=PROJECT)
+
+    def _synchronizer(self):
+        # Stub the API client so construction needs no Halo credentials.
+        with mock.patch.object(MilestoneSynchronizer, 'client_class'):
+            return MilestoneSynchronizer()
+
+    def _task(self, ticket_id, milestone=None):
+        return models.Ticket.objects.create(
+            id=ticket_id, summary='Task {}'.format(ticket_id),
+            status=self.status, project=self.project, milestone=milestone)
+
+    def _milestone(self, milestone_id, sequence=1, name='Plan'):
+        return models.Milestone.objects.create(
+            id=milestone_id, ticket=self.project, name=name,
+            sequence=sequence, state=2)
+
+    # --- validation ------------------------------------------------------
+
+    def test_template_milestones_are_skipped(self):
+        """Halo returns project *templates* under a negative ticket_id. They
+        have no local project, so they must not be synced at all."""
+        sync = self._synchronizer()
+        self.assertFalse(sync._try_validate({'ticket_id': -33}))
+        self.assertFalse(sync._try_validate({'ticket_id': 0}))
+        self.assertTrue(sync._try_validate({'ticket_id': 500}))
+
+    # --- field mapping ---------------------------------------------------
+
+    def test_assign_field_data_maps_the_payload(self):
+        sync = self._synchronizer()
+        instance = models.Milestone()
+
+        sync._assign_field_data(
+            instance, milestone_payload(1, 500, name='Plan', sequence=3))
+
+        self.assertEqual(instance.id, 1)
+        self.assertEqual(instance.name, 'Plan')
+        self.assertEqual(instance.sequence, 3)
+        self.assertEqual(instance.state, 2)
+        self.assertEqual(instance.ticket_id, 500)
+        self.assertEqual(instance.start_date.isoformat(), '2026-03-01')
+        self.assertEqual(instance.target_date.isoformat(), '2026-03-31')
+
+    def test_assign_field_data_buffers_links_and_edges(self):
+        """Both reference milestones that may not exist yet, so they are
+        applied in a second pass rather than inline."""
+        sync = self._synchronizer()
+
+        sync._assign_field_data(
+            models.Milestone(),
+            milestone_payload(2, 500, tickets=(11, 12), dependencies=(1,)))
+
+        self.assertEqual(sync._ticket_links, {2: {11, 12}})
+        self.assertEqual(sync._edges, {2: {1}})
+
+    # --- reconciliation --------------------------------------------------
+
+    def test_post_sync_links_tickets_to_their_milestone(self):
+        sync = self._synchronizer()
+        plan = self._milestone(1)
+        self._task(11)
+        self._task(12)
+
+        sync._ticket_links = {1: {11, 12}}
+        sync._edges = {1: set()}
+        sync._post_sync_operations(mock.Mock())
+
+        self.assertEqual(
+            set(models.Ticket.objects.filter(milestone=plan)
+                .values_list('id', flat=True)),
+            {11, 12})
+
+    def test_post_sync_clears_a_ticket_that_left_its_milestone(self):
+        sync = self._synchronizer()
+        plan = self._milestone(1)
+        stayed = self._task(11, milestone=plan)
+        left = self._task(12, milestone=plan)
+
+        sync._ticket_links = {1: {stayed.id}}
+        sync._edges = {1: set()}
+        sync._post_sync_operations(mock.Mock())
+
+        left.refresh_from_db()
+        stayed.refresh_from_db()
+        self.assertIsNone(left.milestone_id)
+        self.assertEqual(stayed.milestone_id, 1)
+
+    def test_post_sync_creates_dependency_edges(self):
+        sync = self._synchronizer()
+        self._milestone(1, sequence=1, name='Plan')
+        self._milestone(2, sequence=2, name='Build')
+
+        sync._ticket_links = {1: set(), 2: set()}
+        sync._edges = {1: set(), 2: {1}}
+        sync._post_sync_operations(mock.Mock())
+
+        self.assertEqual(
+            list(models.MilestoneDependency.objects
+                 .values_list('child_id', 'parent_id')),
+            [(2, 1)])
+
+    def test_post_sync_removes_an_edge_dropped_in_halo(self):
+        sync = self._synchronizer()
+        plan = self._milestone(1, sequence=1)
+        build = self._milestone(2, sequence=2, name='Build')
+        models.MilestoneDependency.objects.create(child=build, parent=plan)
+
+        sync._ticket_links = {1: set(), 2: set()}
+        sync._edges = {1: set(), 2: set()}
+        sync._post_sync_operations(mock.Mock())
+
+        self.assertFalse(models.MilestoneDependency.objects.exists())
+
+    def test_post_sync_ignores_an_edge_to_an_unsynced_milestone(self):
+        """A parent that was skipped (a template, or a project we don't sync)
+        has nothing local to point at."""
+        sync = self._synchronizer()
+        self._milestone(2, sequence=2, name='Build')
+
+        sync._ticket_links = {2: set()}
+        sync._edges = {2: {999}}
+        sync._post_sync_operations(mock.Mock())
+
+        self.assertFalse(models.MilestoneDependency.objects.exists())
+
+    def test_post_sync_is_a_no_op_when_nothing_was_fetched(self):
+        """An empty response must not be read as "Halo deleted everything"."""
+        sync = self._synchronizer()
+        plan = self._milestone(1)
+        build = self._milestone(2, sequence=2, name='Build')
+        models.MilestoneDependency.objects.create(child=build, parent=plan)
+        self._task(11, milestone=plan)
+
+        sync._post_sync_operations(mock.Mock())
+
+        self.assertTrue(models.MilestoneDependency.objects.exists())
+        self.assertEqual(
+            models.Ticket.objects.filter(milestone=plan).count(), 1)
+
+    # --- writing back ----------------------------------------------------
+
+    def _patched_ticket_api(self, remote_milestones):
+        client = mock.MagicMock()
+        client.request.return_value = {'milestones': remote_milestones}
+        client._format_endpoint.return_value = 'https://halo/api/Tickets/500'
+        return client
+
+    def test_update_dependency_posts_the_whole_milestone_list(self):
+        """Halo treats the list as a full replacement, so every milestone must
+        go back — dropping one would delete it."""
+        sync = self._synchronizer()
+        build = self._milestone(2, sequence=2, name='Build')
+        remote = [
+            milestone_payload(1, 500, name='Plan', sequence=1),
+            milestone_payload(2, 500, name='Build', sequence=2),
+        ]
+        client = self._patched_ticket_api(remote)
+
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            sync.update_dependency(build, 1)
+
+        client.update.assert_called_once()
+        project_id, data = client.update.call_args[0]
+        self.assertEqual(project_id, 500)
+        sent = data['milestones']
+        self.assertEqual([m['id'] for m in sent], [1, 2])
+        # Only the target milestone's dependency changed; everything else is
+        # posted back exactly as Halo returned it.
+        self.assertEqual(sent[1]['milestone_dependencies'], [{'id': 1}])
+        self.assertEqual(sent[0]['milestone_dependencies'], [])
+        self.assertEqual(sent[0]['name'], 'Plan')
+        self.assertEqual(sent[1]['tickets'], remote[1]['tickets'])
+
+    def test_update_dependency_clears_with_none(self):
+        sync = self._synchronizer()
+        build = self._milestone(2, sequence=2, name='Build')
+        client = self._patched_ticket_api([
+            milestone_payload(2, 500, name='Build', sequence=2,
+                              dependencies=(1,)),
+        ])
+
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            sync.update_dependency(build, None)
+
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual(sent[0]['milestone_dependencies'], [])
+
+    def test_update_dependency_refuses_when_the_milestone_is_gone(self):
+        """Posting the list we just read would delete the milestones Halo
+        still has, so bail out instead."""
+        sync = self._synchronizer()
+        build = self._milestone(2, sequence=2, name='Build')
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1),
+        ])
+
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            with self.assertRaises(InvalidObjectException):
+                sync.update_dependency(build, 1)
+
+        client.update.assert_not_called()
+
+    def test_update_dependency_refuses_when_halo_returns_no_milestones(self):
+        sync = self._synchronizer()
+        build = self._milestone(2, sequence=2, name='Build')
+        client = self._patched_ticket_api([])
+
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            with self.assertRaises(InvalidObjectException):
+                sync.update_dependency(build, 1)
+
+        client.update.assert_not_called()

@@ -22,6 +22,9 @@ from djpsa.halo.records.outcome.model import Outcome, OutcomeTracker
 from djpsa.halo.records.chargerate.model import ChargeRate, ChargeRateTracker
 from djpsa.halo.records.fieldinfo.model import UDFDefinition, UDFDefinitionTracker
 from djpsa.halo.records.cannedtext.model import CannedText, CannedTextTracker
+from djpsa.halo.records.milestone.model import (
+    Milestone, MilestoneTracker, MilestoneDependency,
+    MilestoneDependencyTracker)
 
 
 class FieldInfoReference(TimeStampedModel):

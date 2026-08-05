@@ -70,6 +70,13 @@ class Ticket(TimeStampedModel):
         'TicketType', blank=True, null=True, on_delete=models.CASCADE)
     project = models.ForeignKey(
         'Ticket', blank=True, null=True, on_delete=models.CASCADE)
+    # The project milestone this task belongs to. Halo reports it only on the
+    # ticket *detail* endpoint, never on the list endpoint the ticket sync
+    # pages through, so it is populated from the milestone side — see
+    # MilestoneSynchronizer._reconcile_ticket_links.
+    milestone = models.ForeignKey(
+        'Milestone', blank=True, null=True, on_delete=models.SET_NULL,
+        related_name='tickets')
     team = models.ForeignKey(
         'Team', blank=True, null=True, on_delete=models.CASCADE)
     user_email = models.EmailField(blank=True, null=True)

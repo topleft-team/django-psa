@@ -22,6 +22,7 @@ from djpsa.halo.records.chargerate.sync import ChargeRateSynchronizer
 from djpsa.halo.records.timesheetevent.sync import TimeSheetEventSynchronizer
 from djpsa.halo.records.fieldinfo.sync import FieldInfoSynchronizer
 from djpsa.halo.records.cannedtext.sync import CannedTextSynchronizer
+from djpsa.halo.records.milestone.sync import MilestoneSynchronizer
 
 from djpsa.sync.grades import SyncGrades
 
@@ -37,6 +38,9 @@ class HaloSyncGrades(SyncGrades):
             AgentSynchronizer,
             ClientSynchronizer,
             TicketSynchronizer,
+            # After the tickets it links to, so the member-ticket and
+            # dependency reconciliation has rows to point at.
+            MilestoneSynchronizer,
             AppointmentSynchronizer,
             ActionSynchronizer,
         ]
@@ -75,4 +79,5 @@ sync_command_list = [
         ('budget_data', (BudgetDataSynchronizer, _('BudgetData'))),
         ('field_info', (FieldInfoSynchronizer, _('FieldInfo'))),
         ('canned_text', (CannedTextSynchronizer, _('CannedText'))),
+        ('milestone', (MilestoneSynchronizer, _('Milestone'))),
     ]
