@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 LONG_DESCRIPTION = open('README.md').read()
 
-VERSION = (0, 35, '0')
+VERSION = (0, 36, '0')
 
 # pragma: no cover
 if VERSION[-1] != "final":
