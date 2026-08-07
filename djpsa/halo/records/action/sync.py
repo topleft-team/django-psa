@@ -22,7 +22,7 @@ class ActionSynchronizer(sync.ResponseKeyMixin,
         'project_id': (models.TicketTracker, 'project'),
         'who_agentid': (models.Agent, 'agent'),
         'outcome_id': (models.Outcome, 'outcome'),
-        'charge_rate_id': (models.ChargeRate, 'charge_rate'),
+        'charge_rate_id': (models.ChargeRate, 'chargerate'),
     }
 
     def _get_real_action_id(self, action_record):
