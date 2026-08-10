@@ -134,3 +134,16 @@ class CannedTextAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'team', 'agent')
     search_fields = ['id', 'name', 'text']
     list_filter = ('team', 'agent')
+
+
+@admin.register(models.Milestone)
+class MilestoneAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'ticket', 'sequence', 'start_date',
+                    'target_date', 'state')
+    search_fields = ['id', 'name', 'ticket__id', 'ticket__summary']
+
+
+@admin.register(models.MilestoneDependency)
+class MilestoneDependencyAdmin(admin.ModelAdmin):
+    list_display = ('id', 'child', 'parent')
+    search_fields = ['child__name', 'parent__name']
