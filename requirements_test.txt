@@ -8,3 +8,4 @@ model-mommy
 django-coverage
 names
 django-environ
+psycopg2
