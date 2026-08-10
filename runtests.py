@@ -33,6 +33,7 @@ settings.configure(
         'django.contrib.contenttypes',
         'django.contrib.auth',
         'django.contrib.sessions',
+        'django.contrib.postgres',
     ),
     DATABASES={
         # TODO need to figure out something for multiple PSA support
