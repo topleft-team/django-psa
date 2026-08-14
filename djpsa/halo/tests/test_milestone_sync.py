@@ -2,6 +2,7 @@ from unittest import mock
 
 from django.test import TestCase
 
+from djpsa.api.exceptions import APIError
 from djpsa.halo import models
 from djpsa.halo.records.milestone.sync import MilestoneSynchronizer
 from djpsa.halo.records.ticket.model import ItilRequestType
@@ -30,6 +31,13 @@ def milestone_payload(milestone_id, project_id, name='Plan', sequence=1,
             {'id': 200 + i, 'milestone_id': milestone_id, 'ticket_id': t,
              'ticket_name': str(t)}
             for i, t in enumerate(tickets)
+        ],
+        # Halo returns the member tickets twice, in its search-result shape as
+        # well. This is the one it accepts writes on.
+        'tickets_list': [
+            {'id': t, 'idsummary': '{} - Task'.format(t), 'table': 1,
+             'use': 'ticket'}
+            for t in tickets
         ],
     }
 
@@ -292,3 +300,200 @@ class MilestoneSynchronizerTestCase(TestCase):
                 sync.update_dependencies(500, {2: 1})
 
         client.update.assert_not_called()
+
+    # --- moving a ticket between milestones -------------------------------
+
+    def _set_milestone(self, client, *args, **kwargs):
+        """Run set_ticket_milestone against a stubbed API and lock."""
+        sync = self._synchronizer()
+        with mock.patch(
+                'djpsa.halo.records.milestone.sync.api.TicketAPI',
+                return_value=client):
+            with mock.patch(
+                    'djpsa.halo.records.milestone.sync.redis_lock') as lock:
+                sync.set_ticket_milestone(*args, **kwargs)
+        return lock
+
+    def test_set_ticket_milestone_moves_the_ticket(self):
+        """Out of the source, into the target, and the local row follows."""
+        plan = self._milestone(1)
+        self._milestone(2, sequence=2, name='Build')
+        task = self._task(11, milestone=plan)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1,
+                              tickets=(11, 12)),
+            milestone_payload(2, 500, name='Build', sequence=2, tickets=(13,)),
+        ])
+
+        self._set_milestone(client, 500, 11, 2)
+
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual(
+            [t['id'] for t in sent[0]['tickets_list']], [12])
+        self.assertEqual(
+            [t['id'] for t in sent[1]['tickets_list']], [13, 11])
+        task.refresh_from_db()
+        self.assertEqual(task.milestone_id, 2)
+
+    def test_set_ticket_milestone_adds_only_the_id(self):
+        """Halo fills the rest of the row in, and a ticket in no milestone has
+        no row to copy."""
+        self._milestone(1)
+        self._task(11)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1),
+        ])
+
+        self._set_milestone(client, 500, 11, 1)
+
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual(sent[0]['tickets_list'], [{'id': 11}])
+
+    def test_set_ticket_milestone_posts_the_whole_milestone_list(self):
+        """Halo replaces the array, so every milestone goes back untouched
+        apart from the membership that moved."""
+        plan = self._milestone(1)
+        self._milestone(2, sequence=2, name='Build')
+        self._task(11, milestone=plan)
+        remote = [
+            milestone_payload(1, 500, name='Plan', sequence=1, tickets=(11,)),
+            milestone_payload(2, 500, name='Build', sequence=2,
+                              dependencies=(1,)),
+        ]
+        client = self._patched_ticket_api(remote)
+
+        self._set_milestone(client, 500, 11, 2)
+
+        client.update.assert_called_once()
+        project_id, data = client.update.call_args[0]
+        self.assertEqual(project_id, 500)
+        sent = data['milestones']
+        self.assertEqual([m['id'] for m in sent], [1, 2])
+        self.assertEqual(sent[0]['name'], 'Plan')
+        self.assertEqual(sent[1]['milestone_dependencies'], [{'id': 1}])
+
+    def test_set_ticket_milestone_leaves_the_tickets_array_alone(self):
+        """Halo recomputes `tickets` from the `tickets_list` write itself."""
+        plan = self._milestone(1)
+        self._task(11, milestone=plan)
+        remote = [milestone_payload(1, 500, name='Plan', sequence=1,
+                                    tickets=(11,))]
+        untouched = [dict(row) for row in remote[0]['tickets']]
+        client = self._patched_ticket_api(remote)
+
+        self._set_milestone(client, 500, 11, None)
+
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual(sent[0]['tickets'], untouched)
+
+    def test_set_ticket_milestone_clears_with_none(self):
+        """A ticket can hold no milestone at all."""
+        plan = self._milestone(1)
+        task = self._task(11, milestone=plan)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1,
+                              tickets=(11, 12)),
+        ])
+
+        self._set_milestone(client, 500, 11, None)
+
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual([t['id'] for t in sent[0]['tickets_list']], [12])
+        task.refresh_from_db()
+        self.assertIsNone(task.milestone_id)
+
+    def test_set_ticket_milestone_drops_every_other_membership(self):
+        """Halo membership is many-to-many; the local FK is not. Appending
+        without removing would leave the ticket in both."""
+        plan = self._milestone(1)
+        self._milestone(2, sequence=2, name='Build')
+        self._milestone(3, sequence=3, name='Verify')
+        self._task(11, milestone=plan)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1, tickets=(11,)),
+            milestone_payload(2, 500, name='Build', sequence=2, tickets=(11,)),
+            milestone_payload(3, 500, name='Verify', sequence=3),
+        ])
+
+        self._set_milestone(client, 500, 11, 3)
+
+        sent = client.update.call_args[0][1]['milestones']
+        self.assertEqual(sent[0]['tickets_list'], [])
+        self.assertEqual(sent[1]['tickets_list'], [])
+        self.assertEqual([t['id'] for t in sent[2]['tickets_list']], [11])
+
+    def test_set_ticket_milestone_holds_a_lock_on_the_project(self):
+        """Two moves on one project must not interleave — the second would
+        post an array it read before the first landed."""
+        self._milestone(1)
+        self._task(11)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1),
+        ])
+
+        lock = self._set_milestone(client, 500, 11, 1)
+
+        lock.assert_called_once()
+        self.assertEqual(lock.call_args[0][0], 'halo_project_milestones_500')
+
+    def test_set_ticket_milestone_refuses_when_the_milestone_is_gone(self):
+        """Posting the list we just read would delete the milestones Halo
+        still has."""
+        plan = self._milestone(1)
+        task = self._task(11, milestone=plan)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1, tickets=(11,)),
+        ])
+
+        with self.assertRaises(InvalidObjectException):
+            self._set_milestone(client, 500, 11, 99)
+
+        client.update.assert_not_called()
+        task.refresh_from_db()
+        self.assertEqual(task.milestone_id, 1)
+
+    def test_set_ticket_milestone_refuses_a_ticket_on_another_project(self):
+        """Halo accepts this and leaves the ticket claiming a milestone on a
+        project it is not part of, its old membership still standing."""
+        other = models.Ticket.objects.create(
+            id=600, summary='Other project', status=self.status,
+            itil_request_type=PROJECT)
+        models.Ticket.objects.create(
+            id=11, summary='Task 11', status=self.status, project=other)
+        self._milestone(1)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1),
+        ])
+
+        with self.assertRaises(InvalidObjectException):
+            self._set_milestone(client, 500, 11, 1)
+
+        client.request.assert_not_called()
+        client.update.assert_not_called()
+
+    def test_set_ticket_milestone_refuses_an_unknown_ticket(self):
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1),
+        ])
+
+        with self.assertRaises(InvalidObjectException):
+            self._set_milestone(client, 500, 999, 1)
+
+        client.update.assert_not_called()
+
+    def test_set_ticket_milestone_keeps_the_local_row_when_halo_rejects(self):
+        """TopLeft must not claim a move HaloPSA refused."""
+        plan = self._milestone(1)
+        self._milestone(2, sequence=2, name='Build')
+        task = self._task(11, milestone=plan)
+        client = self._patched_ticket_api([
+            milestone_payload(1, 500, name='Plan', sequence=1, tickets=(11,)),
+            milestone_payload(2, 500, name='Build', sequence=2),
+        ])
+        client.update.side_effect = APIError('Halo said no')
+
+        with self.assertRaises(APIError):
+            self._set_milestone(client, 500, 11, 2)
+
+        task.refresh_from_db()
+        self.assertEqual(task.milestone_id, 1)
