@@ -185,29 +185,25 @@ class HaloAPIClient(APIClient):
                 error = result['ClassName']
                 error_desc = result['Message']
             except KeyError:
-                try:
-                    if len(result) == 1:
-                        # This is about the best we can do. The Halo API
-                        # doesn't provide a standard error format. There's
-                        # no telling how deep the rabbit hole goes. We will
-                        # just have to handle new error types as they come.
-                        error_desc = (list(result.values())[0]
-                                      .replace(
-                                          "\r", ""
-                                      ).replace(
-                                          "\n", ""
-                                      ).replace(
-                                          "\'", "")
-                                      )
-                    else:
-                        logger.error(f"Unknown error format: {result}")
-                        error_desc = "An unknown error has occurred."
-                except Exception as e:
-                    logger.error(
-                        f"Failed to process error from response: "
-                        f"{result}, {e}"
-                    )
-                    raise e
+                if len(result) == 1:
+                    # This is about the best we can do. The Halo API
+                    # doesn't provide a standard error format. There's
+                    # no telling how deep the rabbit hole goes. We will
+                    # just have to handle new error types as they come.
+                    # The value is usually a string, but not always -- a
+                    # rejected field write comes back as a list -- so it is
+                    # stringified before being tidied up.
+                    error_desc = (str(list(result.values())[0])
+                                  .replace(
+                                      "\r", ""
+                                  ).replace(
+                                      "\n", ""
+                                  ).replace(
+                                      "\'", "")
+                                  )
+                else:
+                    logger.error(f"Unknown error format: {result}")
+                    error_desc = "An unknown error has occurred."
             except TypeError:
                 logger.error(f"Unknown error format: {result}")
                 error_desc = "An unknown error has occurred."

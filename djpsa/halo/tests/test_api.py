@@ -48,3 +48,27 @@ class TestHaloAPIClient(unittest.TestCase):
             headers={'Authorization': 'Bearer new_token'},
             params=None
         )
+
+
+class TestPrepareErrorResponse(unittest.TestCase):
+    """Halo has no standard error format, so the single-key fallback has to
+    cope with whatever type the value happens to be."""
+
+    def _error(self, content):
+        response = MagicMock()
+        response.content = content.encode('utf-8')
+        return HaloAPIClient()._prepare_error_response(response)
+
+    def test_single_key_string_value(self):
+        self.assertEqual(self._error('{"error": "Bad request"}'),
+                         'Error: Bad request')
+
+    def test_single_key_list_value(self):
+        # A rejected field write comes back as a list. This used to raise
+        # AttributeError from .replace(), losing the message it was handed.
+        self.assertEqual(
+            self._error('{"errors": ["Error converting value 36."]}'),
+            "[Error converting value 36.]")
+
+    def test_unparseable_content(self):
+        self.assertIn('An error occurred', self._error('not json'))
